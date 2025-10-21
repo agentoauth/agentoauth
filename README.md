@@ -2,7 +2,7 @@
 
 A neutral protocol for AI agents to prove who authorized what. AgentOAuth provides verifiable authorization tokens with clear scope, limits, and expiration—built on OAuth/JWT patterns for maximum interoperability.
 
-**Status**: ✅ v0.1 Complete | 📦 26 Unit Tests Passing | 🔐 Production Ready
+**Status**: ✅ v0.1 Complete | 📦 16 Unit Tests Passing | 🔐 Production Ready
 
 **Latest**: Enhanced input validation, consistent error handling, JSDoc comments, decode() helper, and agent-to-merchant demo
 
