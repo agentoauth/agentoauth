@@ -184,6 +184,10 @@ Expected: ✅ All packages build, 18 tests pass
 
 See [SANITY_CHECK.md](SANITY_CHECK.md) for detailed results.
 
+## Repository
+
+GitHub: https://github.com/agentoauth/agentoauth
+
 ## License
 
 Dual licensed under MIT and Apache 2.0. See [LICENSE](LICENSE).

@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { verify as verifyToken } from '@agentoauth/sdk';
 import { generateDemoKeyPair, type KeyPair } from './keys.js';
+import crypto from 'node:crypto';
 
 const app = new Hono();
 
@@ -90,7 +91,6 @@ app.post('/verify', async (c) => {
     }
 
     // Log verification attempt (token hash only for security)
-    const crypto = await import('crypto');
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex').substring(0, 16);
     console.info('🔐 Verification attempt:', {
       tokenHash,
@@ -131,7 +131,6 @@ app.post('/verify', async (c) => {
 
   } catch (error) {
     // Log unexpected errors
-    const crypto = await import('crypto');
     const tokenHash = token ? 
       crypto.createHash('sha256').update(token).digest('hex').substring(0, 16) : 
       'unknown';
@@ -261,7 +260,6 @@ app.post('/demo/create-token', async (c) => {
     console.log('📤 Token preview:', token.substring(0, 50) + '...');
 
     // Log token creation (hash only)
-    const crypto = await import('crypto');
     const tokenHash = crypto.createHash('sha256').update(token).digest('hex').substring(0, 16);
     console.info('🎫 Token created:', {
       tokenHash,
