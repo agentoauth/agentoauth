@@ -80,7 +80,7 @@ describe('AgentOAuth SDK', () => {
 
       await expect(
         request(invalidPayload, privateJWK, kid)
-      ).rejects.toThrow(/Invalid payload/);
+      ).rejects.toThrow(/Payload validation failed/);
     });
 
     it('should reject invalid payload - wrong version', async () => {
@@ -96,7 +96,7 @@ describe('AgentOAuth SDK', () => {
 
       await expect(
         request(invalidPayload, privateJWK, kid)
-      ).rejects.toThrow(/Invalid payload/);
+      ).rejects.toThrow(/Payload validation failed/);
     });
 
     it('should reject invalid payload - bad currency format', async () => {
@@ -112,7 +112,7 @@ describe('AgentOAuth SDK', () => {
 
       await expect(
         request(invalidPayload, privateJWK, kid)
-      ).rejects.toThrow(/Invalid payload/);
+      ).rejects.toThrow(/Payload validation failed/);
     });
 
     it('should reject invalid payload - bad scope format', async () => {
@@ -128,7 +128,7 @@ describe('AgentOAuth SDK', () => {
 
       await expect(
         request(invalidPayload, privateJWK, kid)
-      ).rejects.toThrow(/Invalid payload/);
+      ).rejects.toThrow(/Payload validation failed/);
     });
   });
 
@@ -519,7 +519,7 @@ describe('AgentOAuth SDK', () => {
 
       await expect(
         request(payload, privateJWK, kid)
-      ).rejects.toThrow(/Invalid payload/);
+      ).rejects.toThrow(/Payload validation failed/);
     });
 
     it('should validate limit amount is non-negative', async () => {
@@ -535,7 +535,7 @@ describe('AgentOAuth SDK', () => {
 
       await expect(
         request(payload, privateJWK, kid)
-      ).rejects.toThrow(/Invalid payload/);
+      ).rejects.toThrow(/Payload validation failed/);
     });
 
     it('should validate scope pattern', async () => {
