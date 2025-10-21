@@ -1,0 +1,33 @@
+{
+  "name": "@agentoauth/sdk",
+  "version": "0.1.0",
+  "description": "JavaScript/TypeScript SDK for AgentOAuth protocol",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:full": "tsc && node scripts/build-esm.js",
+    "build:tsup": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "postbuild": "node scripts/build-esm.js || true"
+  },
+  "dependencies": {
+    "jose": "^5.2.0",
+    "ajv": "^8.12.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsup": "^8.0.1",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.0"
+  },
+  "keywords": ["agentoauth", "oauth", "jwt", "jws", "authorization"],
+  "license": "MIT AND Apache-2.0"
+}
+

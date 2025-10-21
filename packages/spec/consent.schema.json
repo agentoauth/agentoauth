@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentoauth.org/schemas/consent-v0.1.json",
+  "title": "AgentOAuth Consent Token Payload",
+  "description": "Schema for AgentOAuth v0.1 token payload",
+  "type": "object",
+  "required": ["ver", "user", "agent", "scope", "limit", "exp", "nonce"],
+  "properties": {
+    "ver": {
+      "type": "string",
+      "const": "0.1",
+      "description": "Specification version"
+    },
+    "user": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the authorizing user (DID or stable ID)"
+    },
+    "agent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the delegated agent"
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9_:.\\-]+$",
+      "description": "OAuth-style scope defining authorized action"
+    },
+    "limit": {
+      "type": "object",
+      "required": ["amount", "currency"],
+      "properties": {
+        "amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum amount allowed"
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3,
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Constraints on the authorization"
+    },
+    "aud": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Intended audience/verifier (optional)"
+    },
+    "exp": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Expiration time as Unix timestamp (seconds)"
+    },
+    "nonce": {
+      "type": "string",
+      "minLength": 8,
+      "description": "Unique value for replay protection"
+    }
+  },
+  "additionalProperties": true
+}
+

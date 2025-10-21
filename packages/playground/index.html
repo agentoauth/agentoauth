@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentOAuth Playground</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AgentOAuth Playground</h1>
+            <p class="subtitle">Validate agent authorization tokens</p>
+        </header>
+
+        <main>
+            <section class="input-section">
+                <label for="token-input">
+                    <strong>Paste Token (JWS Compact Format)</strong>
+                </label>
+                <textarea 
+                    id="token-input" 
+                    placeholder="eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xMjM0NTY3ODkwIiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjEiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6YWxpY2UiLCJhZ2VudCI6InRlc3QtYm90IiwiYXVkIjoibWVyY2hhbnQuZXhhbXBsZSIsInNjb3BlIjoicGF5Om1lcmNoYW50IiwibGltaXQiOnsiYW1vdW50IjoxMDAwLCJjdXJyZW5jeSI6IlVTRCJ9LCJleHAiOjE3MzQyMjA3OTksIm5vbmNlIjoiOGIyZDBjOWIxNGEwYThjMSJ9..."
+                    rows="6"
+                ></textarea>
+
+                <div class="options">
+                    <label for="api-url">
+                        <strong>Verifier API URL</strong>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="api-url" 
+                        value="http://localhost:3000"
+                        placeholder="http://localhost:3000"
+                    >
+
+                    <label for="audience">
+                        <strong>Expected Audience (optional)</strong>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="audience" 
+                        placeholder="merchant.example"
+                    >
+                </div>
+
+                <button id="verify-btn" class="btn-primary">Verify Token</button>
+                <button id="demo-btn" class="btn-secondary">Create Demo Token</button>
+            </section>
+
+            <section class="output-section" id="output" style="display: none;">
+                <div id="result-header" class="result-header"></div>
+                <div id="result-body" class="result-body"></div>
+            </section>
+
+            <section class="info-section">
+                <h2>About AgentOAuth</h2>
+                <p>
+                    AgentOAuth is a neutral protocol that lets AI agents prove who authorized what.
+                    It uses JWS tokens with a five-field schema (user, agent, scope, limit, expiry + signature)
+                    built on OAuth/JWT patterns.
+                </p>
+                <ul>
+                    <li><strong>Spec:</strong> <a href="https://github.com/yourusername/agentoauth" target="_blank">View Specification</a></li>
+                    <li><strong>SDK:</strong> JavaScript/TypeScript (Python coming soon)</li>
+                    <li><strong>License:</strong> MIT / Apache 2.0</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+

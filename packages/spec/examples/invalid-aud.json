@@ -1,0 +1,15 @@
+{
+  "ver": "0.1",
+  "user": "did:example:carol",
+  "agent": "booking-agent@platform",
+  "scope": "book:hotel",
+  "limit": {
+    "amount": 2000,
+    "currency": "GBP"
+  },
+  "aud": "hotel-a.example",
+  "exp": 1799999999,
+  "nonce": "wrong-audience-456",
+  "_comment": "This token is intended for hotel-a.example, verifier is hotel-b.example"
+}
+

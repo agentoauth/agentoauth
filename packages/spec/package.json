@@ -1,0 +1,18 @@
+{
+  "name": "@agentoauth/spec",
+  "version": "0.1.0",
+  "description": "AgentOAuth protocol specification and JSON schema",
+  "main": "consent.schema.json",
+  "scripts": {
+    "lint": "echo 'No linting needed for spec'",
+    "test": "echo 'No tests for spec'",
+    "build": "echo 'No build needed for spec'"
+  },
+  "files": [
+    "SPEC.md",
+    "consent.schema.json",
+    "examples/"
+  ],
+  "license": "MIT AND Apache-2.0"
+}
+

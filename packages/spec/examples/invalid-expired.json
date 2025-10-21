@@ -1,0 +1,15 @@
+{
+  "ver": "0.1",
+  "user": "did:example:bob",
+  "agent": "payment-agent@service",
+  "scope": "pay:merchant",
+  "limit": {
+    "amount": 500,
+    "currency": "EUR"
+  },
+  "aud": "shop.example",
+  "exp": 1609459200,
+  "nonce": "expired-token-123",
+  "_comment": "This token expired on 2021-01-01"
+}
+

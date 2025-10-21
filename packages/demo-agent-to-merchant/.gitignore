@@ -1,0 +1,6 @@
+# Keys directory (demo keys should not be committed)
+keys/
+
+# Logs
+*.log
+

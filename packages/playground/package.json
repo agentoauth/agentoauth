@@ -1,0 +1,16 @@
+{
+  "name": "@agentoauth/playground",
+  "version": "0.1.0",
+  "description": "Interactive token validator for AgentOAuth",
+  "scripts": {
+    "dev": "serve . -p 8080",
+    "build": "echo 'No build needed for static site'",
+    "lint": "echo 'No linting needed'",
+    "test": "echo 'No tests for playground'"
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  },
+  "license": "MIT AND Apache-2.0"
+}
+

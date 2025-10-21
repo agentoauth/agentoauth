@@ -1,0 +1,14 @@
+{
+  "ver": "0.1",
+  "user": "did:example:alice",
+  "agent": "freelance-bot@yourapp",
+  "scope": "pay:freelancer",
+  "limit": {
+    "amount": 1500,
+    "currency": "USD"
+  },
+  "aud": "merchant.example",
+  "exp": 1734220799,
+  "nonce": "8b2d0c9b14a0a8c1"
+}
+

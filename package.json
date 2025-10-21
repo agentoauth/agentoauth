@@ -1,0 +1,24 @@
+{
+  "name": "agentoauth",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A neutral protocol for AI agent authorization",
+  "scripts": {
+    "setup": "pnpm install && pnpm run build",
+    "build": "pnpm --filter @agentoauth/sdk build && pnpm --filter @agentoauth/verifier-api build",
+    "build:all": "pnpm -r run build",
+    "dev": "pnpm -r run dev",
+    "lint": "pnpm -r run lint",
+    "test": "pnpm -r run test",
+    "demo": "pnpm install && pnpm run build && cd packages/demo-agent-to-merchant && bash demo.sh",
+    "demo:merchant": "cd packages/demo-agent-to-merchant && node merchant.js",
+    "demo:agent": "cd packages/demo-agent-to-merchant && node agent.js"
+  },
+  "keywords": ["oauth", "agent", "authorization", "jwt", "jws"],
+  "author": "",
+  "license": "MIT AND Apache-2.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
