@@ -1,6 +1,7 @@
 import { SignJWT, importJWK, type JWK } from 'jose';
 import { AgentOAuthPayload, AgentOAuthError } from './types.js';
 import { validatePayload } from './schema.js';
+import crypto from 'node:crypto';
 
 /**
  * Creates a signed AgentOAuth authorization token.
