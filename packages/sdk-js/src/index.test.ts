@@ -110,7 +110,7 @@ describe('AgentOAuth SDK', () => {
 
     it('should reject invalid payload - wrong version', async () => {
       const invalidPayload = {
-        ver: '0.2', // wrong version
+        ver: '99.9', // invalid version
         user: 'did:example:dave',
         agent: 'test-bot',
         scope: 'read:data',

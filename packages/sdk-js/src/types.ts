@@ -3,9 +3,9 @@
  */
 export interface AgentOAuthPayload {
   /** Specification version */
-  ver: '0.2';
-  /** JWT ID - unique token identifier for revocation and replay protection */
-  jti: string;
+  ver: '0.2' | '0.1';
+  /** JWT ID - unique token identifier for revocation and replay protection (required in v0.2) */
+  jti?: string;
   /** User identifier (DID or stable ID) */
   user: string;
   /** Agent identifier */

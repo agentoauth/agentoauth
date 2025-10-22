@@ -114,8 +114,8 @@ export async function verify(
 
     const typedPayload = payload as unknown as AgentOAuthPayload;
 
-    // Check version
-    if (typedPayload.ver !== '0.1') {
+    // Check version (support both 0.1 and 0.2)
+    if (typedPayload.ver !== '0.2' && typedPayload.ver !== '0.1') {
       return {
         valid: false,
         error: `Unsupported version: ${typedPayload.ver}`,
