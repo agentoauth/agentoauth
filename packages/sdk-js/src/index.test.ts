@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { generateKeyPair, exportJWK, importJWK, SignJWT } from 'jose';
 import { request, verify, decode, AgentOAuthError, type AgentOAuthPayload } from './index.js';
 import type { JWK } from 'jose';
+import crypto from 'node:crypto';
 
 describe('AgentOAuth SDK', () => {
   let privateJWK: JWK;
