@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { verify as verifyToken } from '@agentoauth/sdk';
 import { generateDemoKeyPair, type KeyPair } from './keys.js';
+import { revokeToken, isRevoked, markAsUsed, isUsed, getStats } from './revocation.js';
 import crypto from 'node:crypto';
 
 const app = new Hono();
@@ -111,10 +112,40 @@ app.post('/verify', async (c) => {
       audience: audience || undefined
     });
 
+    // Check revocation (v0.2)
+    if (result.valid && result.payload) {
+      const jti = result.payload.jti;
+      
+      if (!jti) {
+        console.warn('⚠️  Token missing jti field (v0.1 token?)');
+      } else {
+        // Check if token is revoked
+        if (isRevoked(jti)) {
+          console.info('❌ Token REVOKED:', { jti, tokenHash });
+          return c.json({
+            valid: false,
+            error: 'Token has been revoked',
+            code: 'REVOKED'
+          });
+        }
+        
+        // Check for replay attack
+        if (!markAsUsed(jti, result.payload.exp)) {
+          console.warn('🚨 REPLAY ATTACK detected:', { jti, tokenHash });
+          return c.json({
+            valid: false,
+            error: 'Token replay detected - token already used',
+            code: 'REPLAY'
+          });
+        }
+      }
+    }
+
     // Log result
     if (result.valid) {
       console.info('✅ Verification SUCCESS:', {
         tokenHash,
+        jti: result.payload?.jti,
         user: result.payload?.user,
         agent: result.payload?.agent,
         scope: result.payload?.scope
@@ -152,19 +183,64 @@ app.post('/verify', async (c) => {
 // Health check endpoint for CI/monitoring
 app.get('/health', (c) => {
   const isHealthy = keyPair !== undefined;
+  const stats = getStats();
   
   const health = {
     status: isHealthy ? 'ok' : 'initializing',
     service: 'agentoauth-verifier',
-    version: '0.1.0',
+    version: '0.2.0',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    keyId: keyPair?.kid || null
+    keyId: keyPair?.kid || null,
+    revoked: stats.revokedCount,
+    replayCache: stats.replayCacheSize
   };
 
   console.info('🏥 Health check:', health);
 
   return c.json(health, isHealthy ? 200 : 503);
+});
+
+// Revoke endpoint (v0.2)
+app.post('/revoke', async (c) => {
+  console.log('📥 Received /revoke request');
+  
+  try {
+    const body = await c.req.json();
+    const { jti } = body;
+    
+    if (!jti || typeof jti !== 'string') {
+      console.error('❌ Missing or invalid jti');
+      return c.json({
+        success: false,
+        error: 'Missing or invalid jti field',
+        code: 'INVALID_REQUEST'
+      }, 400);
+    }
+    
+    console.log(`🚫 Revoking token: ${jti}`);
+    
+    const wasRevoked = revokeToken(jti);
+    
+    if (!wasRevoked) {
+      console.info('ℹ️  Token already revoked:', jti);
+    }
+    
+    return c.json({
+      success: true,
+      jti,
+      revokedAt: new Date().toISOString(),
+      alreadyRevoked: !wasRevoked
+    });
+    
+  } catch (error) {
+    console.error('❌ Revocation error:', error);
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Internal server error',
+      code: 'SERVER_ERROR'
+    }, 500);
+  }
 });
 
 // Demo token creation endpoint (for testing) with input validation
@@ -242,7 +318,8 @@ app.post('/demo/create-token', async (c) => {
     console.log('✅ SDK imported');
 
     const payload = {
-      ver: '0.1' as const,
+      ver: '0.2' as const,
+      jti: body.jti || crypto.randomUUID(),
       user: body.user,
       agent: body.agent,
       scope: body.scope,

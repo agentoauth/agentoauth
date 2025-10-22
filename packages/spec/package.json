@@ -1,6 +1,6 @@
 {
   "name": "@agentoauth/spec",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AgentOAuth protocol specification and JSON schema",
   "main": "consent.schema.json",
   "scripts": {

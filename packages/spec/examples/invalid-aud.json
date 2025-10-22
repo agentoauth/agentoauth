@@ -1,5 +1,6 @@
 {
-  "ver": "0.1",
+  "ver": "0.2",
+  "jti": "aud-mismatch-41d4-a716-446655440000",
   "user": "did:example:carol",
   "agent": "booking-agent@platform",
   "scope": "book:hotel",

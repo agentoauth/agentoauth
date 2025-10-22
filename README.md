@@ -2,9 +2,72 @@
 
 A neutral protocol for AI agents to prove who authorized what. AgentOAuth provides verifiable authorization tokens with clear scope, limits, and expiration—built on OAuth/JWT patterns for maximum interoperability.
 
-**Status**: ✅ v0.1 Complete | 📦 16 Unit Tests Passing | 🔐 Production Ready
+**Status**: ✅ v0.2 Complete | 📦 19 Unit Tests Passing | 🔐 Production Ready
 
-**Latest**: Enhanced input validation, consistent error handling, JSDoc comments, decode() helper, and agent-to-merchant demo
+**Latest v0.2**: Token revocation (jti), anti-replay protection, examples package, Postman collection, enhanced playground with copy buttons
+
+## 🚀 5-Minute Quickstart
+
+**Complete walkthrough from setup to revocation:**
+
+### Minute 1: Setup
+
+```bash
+cd /Users/prithvi/projects/agentoauth
+npm install -g pnpm
+pnpm setup  # Installs deps and builds packages
+```
+
+### Minute 2: Generate Keys & Issue Token
+
+```bash
+cd packages/examples
+node issue-token.js
+```
+
+You'll see:
+- ✅ Generated Ed25519 keypair
+- 🎫 Created authorization token
+- 📋 Token (copy this!)
+- 📦 Decoded payload with jti
+
+### Minute 3: Verify Token
+
+```bash
+# Start verifier API (terminal 1)
+cd ../verifier-api && pnpm dev
+
+# Verify token (terminal 2)
+cd ../examples
+node verify-token.js
+# Paste the token from step 2
+```
+
+Result: ✅ Token is Valid
+
+### Minute 4: Revoke Token
+
+```bash
+# Get the jti from the token output
+curl -X POST http://localhost:3000/revoke \
+  -H "Content-Type: application/json" \
+  -d '{"jti": "YOUR_JTI_HERE"}'
+```
+
+Result: Token revoked!
+
+### Minute 5: Re-verify (Fails)
+
+```bash
+node verify-token.js
+# Paste the same token
+```
+
+Result: ❌ Token is INVALID - Code: REVOKED
+
+**🎉 You've seen the complete lifecycle: issue → verify → revoke → verify fails!**
+
+---
 
 ## Quick Start
 
@@ -98,13 +161,15 @@ See [SUPER_SIMPLE_START.md](SUPER_SIMPLE_START.md) or [ONE_COMMAND_SETUP.md](ONE
 
 ## Resources
 
-- 📖 [Specification](packages/spec/SPEC.md) — Complete protocol documentation
-- 🔧 [JavaScript SDK](packages/sdk-js) — Node.js and browser support (26 tests)
-- 🎮 [Playground](packages/playground) — Interactive token validator
-- 🔐 [Verifier API](packages/verifier-api) — Reference implementation
+- 📖 [Specification](packages/spec/SPEC.md) — Complete protocol documentation (v0.2)
+- 🔧 [JavaScript SDK](packages/sdk-js) — Node.js and browser support (19 tests)
+- 🎮 [Playground](packages/playground) — Interactive validator with copy buttons & samples
+- 🔐 [Verifier API](packages/verifier-api) — Reference implementation with revocation
 - 🎬 [Agent→Merchant Demo](packages/demo-agent-to-merchant) — End-to-end payment flow
-- 🧪 [Test Summary](TEST_SUMMARY.md) — Unit test documentation
-- 🎉 [Project Status](PROJECT_COMPLETE.md) — Complete implementation overview
+- 💡 [Examples](packages/examples) — issue-token.js, verify-token.js scripts
+- 📮 [Postman Collection](postman/) — API testing collection
+- 📝 [Changelog](CHANGELOG.md) — Version history
+- 🎉 [v0.2 Release Notes](V0.2_RELEASE_NOTES.md) — What's new
 
 ## Architecture
 

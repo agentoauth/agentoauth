@@ -1,0 +1,20 @@
+{
+  "name": "@agentoauth/examples",
+  "version": "0.2.0",
+  "description": "Example scripts for AgentOAuth protocol",
+  "type": "module",
+  "scripts": {
+    "issue": "node issue-token.js",
+    "verify": "node verify-token.js",
+    "build": "echo 'No build needed for examples'",
+    "lint": "echo 'No linting for examples'",
+    "test": "echo 'No tests for examples'"
+  },
+  "dependencies": {
+    "@agentoauth/sdk": "workspace:*",
+    "chalk": "^5.3.0",
+    "jose": "^5.2.0"
+  },
+  "license": "MIT AND Apache-2.0"
+}
+

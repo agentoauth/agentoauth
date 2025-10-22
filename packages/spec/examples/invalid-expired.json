@@ -1,5 +1,6 @@
 {
-  "ver": "0.1",
+  "ver": "0.2",
+  "jti": "expired-token-550e8400-e29b-41d4",
   "user": "did:example:bob",
   "agent": "payment-agent@service",
   "scope": "pay:merchant",

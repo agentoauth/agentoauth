@@ -15,12 +15,20 @@
 
         <main>
             <section class="input-section">
-                <label for="token-input">
-                    <strong>Paste Token (JWS Compact Format)</strong>
-                </label>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <label for="token-input">
+                        <strong>Paste Token (JWS Compact Format)</strong>
+                    </label>
+                    <select id="sample-tokens" class="sample-dropdown">
+                        <option value="">-- Load Sample Token --</option>
+                        <option value="valid">✅ Valid Payment Token</option>
+                        <option value="expired">❌ Expired Token</option>
+                        <option value="limit">💰 High Limit Token</option>
+                    </select>
+                </div>
                 <textarea 
                     id="token-input" 
-                    placeholder="eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xMjM0NTY3ODkwIiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjEiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6YWxpY2UiLCJhZ2VudCI6InRlc3QtYm90IiwiYXVkIjoibWVyY2hhbnQuZXhhbXBsZSIsInNjb3BlIjoicGF5Om1lcmNoYW50IiwibGltaXQiOnsiYW1vdW50IjoxMDAwLCJjdXJyZW5jeSI6IlVTRCJ9LCJleHAiOjE3MzQyMjA3OTksIm5vbmNlIjoiOGIyZDBjOWIxNGEwYThjMSJ9..."
+                    placeholder="eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xMjM0NTY3ODkwIiwidHlwIjoiSldUIn0..."
                     rows="6"
                 ></textarea>
 
@@ -47,6 +55,7 @@
 
                 <button id="verify-btn" class="btn-primary">Verify Token</button>
                 <button id="demo-btn" class="btn-secondary">Create Demo Token</button>
+                <button id="revoke-btn" class="btn-warning">Revoke Token</button>
             </section>
 
             <section class="output-section" id="output" style="display: none;">

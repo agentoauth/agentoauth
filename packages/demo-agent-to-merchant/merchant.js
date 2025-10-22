@@ -46,12 +46,17 @@ const verifyTokenLocal = async (token) => {
     }
 
     // Check version
-    if (payload.ver !== '0.1') {
+    if (payload.ver !== '0.2' && payload.ver !== '0.1') {
       return {
         valid: false,
         error: `Unsupported version: ${payload.ver}`,
         code: 'INVALID_VERSION'
       };
+    }
+    
+    // Warn about v0.1 tokens (missing jti)
+    if (payload.ver === '0.1') {
+      console.warn('⚠️  v0.1 token detected (no jti) - upgrade recommended');
     }
 
     return {

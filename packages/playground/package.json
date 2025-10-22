@@ -1,6 +1,6 @@
 {
   "name": "@agentoauth/playground",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Interactive token validator for AgentOAuth",
   "scripts": {
     "dev": "serve . -p 8080",

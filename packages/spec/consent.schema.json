@@ -4,12 +4,17 @@
   "title": "AgentOAuth Consent Token Payload",
   "description": "Schema for AgentOAuth v0.1 token payload",
   "type": "object",
-  "required": ["ver", "user", "agent", "scope", "limit", "exp", "nonce"],
+  "required": ["ver", "jti", "user", "agent", "scope", "limit", "exp", "nonce"],
   "properties": {
     "ver": {
       "type": "string",
-      "const": "0.1",
+      "const": "0.2",
       "description": "Specification version"
+    },
+    "jti": {
+      "type": "string",
+      "minLength": 8,
+      "description": "JWT ID - unique token identifier for revocation and replay protection"
     },
     "user": {
       "type": "string",

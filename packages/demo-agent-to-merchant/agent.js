@@ -109,7 +109,8 @@ async function main() {
     console.log(chalk.blue('🎫 Creating authorization token...'));
     
     const payload = {
-      ver: '0.1',
+      ver: '0.2',
+      jti: crypto.randomUUID(), // v0.2: JWT ID for revocation/replay protection
       user: config.user,
       agent: config.agent,
       scope: config.scope,

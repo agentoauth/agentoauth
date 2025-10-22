@@ -1,6 +1,6 @@
 {
   "name": "@agentoauth/verifier-api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AgentOAuth verification API with JWKS endpoint",
   "type": "module",
   "main": "./dist/index.js",

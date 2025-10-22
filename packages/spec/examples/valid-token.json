@@ -1,5 +1,6 @@
 {
-  "ver": "0.1",
+  "ver": "0.2",
+  "jti": "550e8400-e29b-41d4-a716-446655440000",
   "user": "did:example:alice",
   "agent": "freelance-bot@yourapp",
   "scope": "pay:freelancer",

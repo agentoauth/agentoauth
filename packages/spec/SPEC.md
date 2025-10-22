@@ -1,4 +1,4 @@
-# AgentOAuth Protocol Specification v0.1
+# AgentOAuth Protocol Specification v0.2
 
 ## Purpose
 
@@ -24,11 +24,12 @@ The JWS header MUST include:
 - `kid` (string, required): Key identifier, typically a DID with fragment or key URL.
 - `typ` (string, required): Must be `"JWT"` for compatibility.
 
-## Payload Fields (v0.1)
+## Payload Fields (v0.2)
 
 The JWS payload MUST be a JSON object containing the following fields:
 
-- **`ver`** (string, required): Specification version. Must be `"0.1"` for this version.
+- **`ver`** (string, required): Specification version. Must be `"0.2"` for this version.
+- **`jti`** (string, required): JWT ID - unique identifier for this token. Used for revocation and replay protection. Minimum length: 8 characters. Recommended: UUID v4.
 - **`user`** (string, required): Identifier of the human or account that granted authorization. Should be a DID (e.g., `did:example:alice`) or stable identifier.
 - **`agent`** (string, required): Identifier of the delegated actor/agent. Can be a service name (e.g., `freelance-bot@yourapp`) or DID.
 - **`scope`** (string, required): OAuth-style scope string defining the authorized action (e.g., `pay:merchant`, `data:calendar.read`).
@@ -43,7 +44,8 @@ The JWS payload MUST be a JSON object containing the following fields:
 
 ```json
 {
-  "ver": "0.1",
+  "ver": "0.2",
+  "jti": "550e8400-e29b-41d4-a716-446655440000",
   "user": "did:example:alice",
   "agent": "freelance-bot@yourapp",
   "scope": "pay:freelancer",
@@ -76,9 +78,11 @@ Verifiers MUST perform the following checks in order:
 
 1. **Signature Validation**: Verify the JWS signature using the public key identified by `kid` in the header.
 2. **Expiration Check**: Ensure `exp` is in the future. Allow clock skew of ±60 seconds.
-3. **Audience Validation** (if `aud` present): Verify `aud` matches the verifier's configured audience identifier.
-4. **Version Check**: Ensure `ver` field matches supported specification version (`"0.1"`).
-5. **Limit Validation**: Application-specific. Verify requested amount/currency is within the `limit`. This is policy-dependent and not enforced by the protocol itself.
+3. **Revocation Check** (v0.2+): Verify token has not been revoked by checking `jti` against revocation list.
+4. **Replay Check** (v0.2+): Verify token has not been used before by checking `jti` against replay cache.
+5. **Audience Validation** (if `aud` present): Verify `aud` matches the verifier's configured audience identifier.
+6. **Version Check**: Ensure `ver` field matches supported specification version (`"0.2"`).
+7. **Limit Validation**: Application-specific. Verify requested amount/currency is within the `limit`. This is policy-dependent and not enforced by the protocol itself.
 
 If any check fails, the token MUST be rejected.
 

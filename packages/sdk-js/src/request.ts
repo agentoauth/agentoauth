@@ -69,6 +69,11 @@ export async function request(
     );
   }
 
+  // Auto-generate jti if not provided
+  if (!payload.jti || payload.jti.trim().length === 0) {
+    (payload as any).jti = crypto.randomUUID();
+  }
+
   // Validate payload structure against JSON schema
   if (!validatePayload(payload)) {
     const errors = validatePayload.errors?.map(e => 

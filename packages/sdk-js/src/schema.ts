@@ -4,11 +4,15 @@ const ajv = new Ajv();
 
 export const payloadSchema = {
   type: 'object',
-  required: ['ver', 'user', 'agent', 'scope', 'limit', 'exp', 'nonce'],
+  required: ['ver', 'jti', 'user', 'agent', 'scope', 'limit', 'exp', 'nonce'],
   properties: {
     ver: {
       type: 'string',
-      const: '0.1'
+      const: '0.2'
+    },
+    jti: {
+      type: 'string',
+      minLength: 8
     },
     user: {
       type: 'string',

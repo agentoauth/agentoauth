@@ -1,0 +1,130 @@
+{
+  "info": {
+    "name": "AgentOAuth v0.2",
+    "description": "Complete API collection for AgentOAuth protocol testing",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "agentoauth"
+  },
+  "item": [
+    {
+      "name": "Verify Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{token}}\",\n  \"audience\": \"{{expectedAud}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/verify",
+          "host": ["{{baseUrl}}"],
+          "path": ["verify"]
+        },
+        "description": "Verify an AgentOAuth token's signature, expiration, and claims"
+      },
+      "response": []
+    },
+    {
+      "name": "Revoke Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jti\": \"{{jti}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/revoke",
+          "host": ["{{baseUrl}}"],
+          "path": ["revoke"]
+        },
+        "description": "Revoke a token by its jti (JWT ID)"
+      },
+      "response": []
+    },
+    {
+      "name": "Create Demo Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user\": \"did:example:alice\",\n  \"agent\": \"test-bot\",\n  \"scope\": \"pay:merchant\",\n  \"limit\": {\n    \"amount\": 1000,\n    \"currency\": \"USD\"\n  },\n  \"aud\": \"{{expectedAud}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/demo/create-token",
+          "host": ["{{baseUrl}}"],
+          "path": ["demo", "create-token"]
+        },
+        "description": "Create a demo token for testing"
+      },
+      "response": []
+    },
+    {
+      "name": "Get JWKS",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/.well-known/jwks.json",
+          "host": ["{{baseUrl}}"],
+          "path": [".well-known", "jwks.json"]
+        },
+        "description": "Get public keys for token verification"
+      },
+      "response": []
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["health"]
+        },
+        "description": "Check verifier API health and stats"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "jti",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "expectedAud",
+      "value": "merchant.example",
+      "type": "string"
+    }
+  ]
+}
+

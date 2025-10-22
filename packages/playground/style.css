@@ -112,6 +112,60 @@ button {
     background: #e0e0e0;
 }
 
+.btn-warning {
+    background: #ffc107;
+    color: #333;
+}
+
+.btn-warning:hover {
+    background: #ffb300;
+}
+
+.btn-copy {
+    padding: 0.5rem 1rem;
+    background: #667eea;
+    color: white;
+    font-size: 0.85rem;
+    margin: 0.25rem;
+}
+
+.btn-copy:hover {
+    background: #5568d3;
+}
+
+.sample-dropdown {
+    padding: 0.5rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: white;
+    cursor: pointer;
+}
+
+.sample-dropdown:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.copy-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.jti-display {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+}
+
+.jti-display strong {
+    color: #856404;
+}
+
 .output-section {
     margin-top: 2rem;
     border-radius: 8px;

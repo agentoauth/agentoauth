@@ -1,9 +1,11 @@
 /**
- * AgentOAuth Token Payload (v0.1)
+ * AgentOAuth Token Payload (v0.2)
  */
 export interface AgentOAuthPayload {
   /** Specification version */
-  ver: '0.1';
+  ver: '0.2';
+  /** JWT ID - unique token identifier for revocation and replay protection */
+  jti: string;
   /** User identifier (DID or stable ID) */
   user: string;
   /** Agent identifier */
@@ -46,7 +48,7 @@ export interface VerificationResult {
   /** Error message (if invalid) */
   error?: string;
   /** Error code for programmatic handling */
-  code?: 'INVALID_SIGNATURE' | 'EXPIRED' | 'INVALID_AUDIENCE' | 'INVALID_PAYLOAD' | 'INVALID_VERSION' | 'NETWORK_ERROR';
+  code?: 'INVALID_SIGNATURE' | 'EXPIRED' | 'INVALID_AUDIENCE' | 'INVALID_PAYLOAD' | 'INVALID_VERSION' | 'NETWORK_ERROR' | 'REVOKED' | 'REPLAY';
 }
 
 /**
@@ -60,7 +62,9 @@ export type ErrorCode =
   | 'INVALID_VERSION'
   | 'INVALID_KEY'
   | 'DECODE_ERROR'
-  | 'NETWORK_ERROR';
+  | 'NETWORK_ERROR'
+  | 'REVOKED'
+  | 'REPLAY';
 
 /**
  * Consistent error object structure

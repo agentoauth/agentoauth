@@ -3,9 +3,14 @@ const apiUrlInput = document.getElementById('api-url');
 const audienceInput = document.getElementById('audience');
 const verifyBtn = document.getElementById('verify-btn');
 const demoBtn = document.getElementById('demo-btn');
+const revokeBtn = document.getElementById('revoke-btn');
+const sampleDropdown = document.getElementById('sample-tokens');
 const outputSection = document.getElementById('output');
 const resultHeader = document.getElementById('result-header');
 const resultBody = document.getElementById('result-body');
+
+// Store current jti for revocation
+let currentJti = null;
 
 // Base64 URL decode
 function base64UrlDecode(str) {
@@ -29,9 +34,19 @@ function decodeJWT(token) {
     return { header, payload };
 }
 
-// Format JSON for display
+// Format JSON for display (pretty print)
 function formatJSON(obj) {
     return JSON.stringify(obj, null, 2);
+}
+
+// Copy to clipboard
+function copyToClipboard(text, label) {
+    navigator.clipboard.writeText(text).then(() => {
+        alert(`✅ ${label} copied to clipboard!`);
+    }).catch(err => {
+        console.error('Copy failed:', err);
+        alert('❌ Failed to copy');
+    });
 }
 
 // Show result
@@ -42,7 +57,28 @@ function showResult(valid, data) {
         resultHeader.className = 'result-header valid';
         resultHeader.textContent = '✅ Token is Valid';
         
-        let html = '<h3>Decoded Header</h3>';
+        // Store jti for revocation
+        if (data.payload && data.payload.jti) {
+            currentJti = data.payload.jti;
+        }
+        
+        let html = '';
+        
+        // JTI Display (v0.2)
+        if (data.payload && data.payload.jti) {
+            html += '<div class="jti-display">';
+            html += `<strong>🆔 Token ID (jti):</strong> ${data.payload.jti}`;
+            html += '</div>';
+        }
+        
+        // Copy buttons
+        html += '<div class="copy-buttons">';
+        html += '<button class="btn-copy" onclick="copyToClipboard(tokenInput.value, \'Token\')">📋 Copy Token</button>';
+        html += `<button class="btn-copy" onclick="copyToClipboard('${JSON.stringify(data.header).replace(/'/g, "\\'")}', 'Header')">📋 Copy Header</button>`;
+        html += `<button class="btn-copy" onclick="copyToClipboard('${JSON.stringify(data.payload).replace(/'/g, "\\'")}', 'Payload')">📋 Copy Payload</button>`;
+        html += '</div>';
+        
+        html += '<h3>Decoded Header</h3>';
         html += `<pre>${formatJSON(data.header)}</pre>`;
         html += '<h3>Payload</h3>';
         html += `<pre>${formatJSON(data.payload)}</pre>`;
@@ -225,9 +261,107 @@ async function createDemoToken() {
     }
 }
 
+// Revoke token
+async function revokeToken() {
+    if (!currentJti) {
+        alert('No token to revoke. Verify a token first to get its jti.');
+        return;
+    }
+    
+    const apiUrl = apiUrlInput.value.trim();
+    
+    if (!confirm(`Revoke token with jti: ${currentJti}?`)) {
+        return;
+    }
+    
+    revokeBtn.classList.add('loading');
+    revokeBtn.textContent = 'Revoking...';
+    
+    console.log('🚫 Revoking token:', currentJti);
+    
+    try {
+        const response = await fetch(`${apiUrl}/revoke`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ jti: currentJti })
+        });
+        
+        const result = await response.json();
+        console.log('📦 Revoke response:', result);
+        
+        if (result.success) {
+            alert(`✅ Token revoked!\n\nJTI: ${result.jti}\nRevoked at: ${result.revokedAt}\n\nTry verifying again - it should fail with REVOKED.`);
+        } else {
+            alert('❌ Revocation failed: ' + (result.error || 'Unknown error'));
+        }
+        
+    } catch (error) {
+        console.error('❌ Revoke error:', error);
+        alert('Failed to revoke token: ' + error.message);
+    } finally {
+        revokeBtn.classList.remove('loading');
+        revokeBtn.textContent = 'Revoke Token';
+    }
+}
+
+// Load sample token
+function loadSample() {
+    const sample = sampleDropdown.value;
+    if (!sample) return;
+    
+    // Sample tokens (these will be created by the demo endpoint)
+    console.log('📝 Loading sample:', sample);
+    
+    // For now, trigger demo token creation with different parameters
+    const apiUrl = apiUrlInput.value.trim();
+    
+    let sampleConfig = {
+        user: 'did:example:alice',
+        agent: 'sample-bot',
+        scope: 'pay:merchant',
+        limit: { amount: 1000, currency: 'USD' }
+    };
+    
+    if (sample === 'expired') {
+        sampleConfig.exp = Math.floor(Date.now() / 1000) - 3600; // 1 hour ago
+        sampleConfig.agent = 'expired-bot';
+    } else if (sample === 'limit') {
+        sampleConfig.limit.amount = 10000;
+        sampleConfig.agent = 'high-limit-bot';
+    }
+    
+    // Create sample token via API
+    fetch(`${apiUrl}/demo/create-token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sampleConfig)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.token) {
+            tokenInput.value = result.token;
+            if (sample === 'valid' || sample === 'limit') {
+                audienceInput.value = 'merchant.example';
+            }
+            alert(`✅ Sample token loaded: ${sample}`);
+        }
+    })
+    .catch(err => {
+        console.error('Failed to load sample:', err);
+        alert('Failed to load sample token. Make sure verifier API is running.');
+    });
+    
+    // Reset dropdown
+    sampleDropdown.value = '';
+}
+
 // Event listeners
 verifyBtn.addEventListener('click', verifyToken);
 demoBtn.addEventListener('click', createDemoToken);
+revokeBtn.addEventListener('click', revokeToken);
+sampleDropdown.addEventListener('change', loadSample);
 
 // Allow Enter key in audience field
 audienceInput.addEventListener('keypress', (e) => {

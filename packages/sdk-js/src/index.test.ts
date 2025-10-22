@@ -26,26 +26,51 @@ describe('AgentOAuth SDK', () => {
     };
   });
 
+  // Helper to create valid payload
+  const createValidPayload = (): AgentOAuthPayload => ({
+    ver: '0.2',
+    jti: crypto.randomUUID(),
+    user: 'did:example:alice',
+    agent: 'test-bot@example',
+    scope: 'pay:merchant',
+    limit: {
+      amount: 1000,
+      currency: 'USD'
+    },
+    exp: Math.floor(Date.now() / 1000) + 3600,
+    nonce: 'test-nonce-12345678'
+  });
+
   describe('Token Creation (request)', () => {
     it('should create a valid token', async () => {
-      const payload: AgentOAuthPayload = {
-        ver: '0.1',
-        user: 'did:example:alice',
-        agent: 'test-bot@example',
-        scope: 'pay:merchant',
-        limit: {
-          amount: 1000,
-          currency: 'USD'
-        },
-        exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
-        nonce: 'test-nonce-12345678'
-      };
+      const payload = createValidPayload();
 
       const token = await request(payload, privateJWK, kid);
       
       expect(token).toBeTruthy();
       expect(typeof token).toBe('string');
       expect(token.split('.')).toHaveLength(3); // header.payload.signature
+    });
+
+    it('should auto-generate jti if not provided', async () => {
+      const payload: any = createValidPayload();
+      delete payload.jti; // Remove jti
+      
+      const token = await request(payload, privateJWK, kid);
+      const { payload: decoded } = decode(token);
+      
+      expect(decoded.jti).toBeDefined();
+      expect(decoded.jti.length).toBeGreaterThanOrEqual(8);
+    });
+
+    it('should use provided jti', async () => {
+      const payload = createValidPayload();
+      payload.jti = 'custom-jti-12345678';
+      
+      const token = await request(payload, privateJWK, kid);
+      const { payload: decoded } = decode(token);
+      
+      expect(decoded.jti).toBe('custom-jti-12345678');
     });
 
     it('should create token with optional audience', async () => {
