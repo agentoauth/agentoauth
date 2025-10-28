@@ -1,0 +1,29 @@
+{
+  "name": "@agentoauth/hosted-verifier",
+  "version": "0.6.0",
+  "description": "Production-ready hosted verifier with API keys, rate limiting, and audit logs",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:prod": "wrangler deploy --env production",
+    "build": "echo 'Build handled by wrangler'",
+    "lint": "echo 'No linting for hosted-verifier'",
+    "test": "echo 'No tests for hosted-verifier'",
+    "gen-keys": "node scripts/generate-keys.js"
+  },
+  "dependencies": {
+    "@agentoauth/sdk": "workspace:*",
+    "hono": "^3.12.0",
+    "jose": "^5.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20231016.0",
+    "wrangler": "^3.15.0",
+    "typescript": "^5.3.3"
+  },
+  "keywords": ["agentoauth", "hosted", "verifier", "cloudflare", "workers"],
+  "author": "",
+  "license": "MIT AND Apache-2.0"
+}

@@ -2,6 +2,38 @@
 
 All notable changes to the AgentOAuth protocol will be documented in this file.
 
+## [0.6.0] - 2025-01-XX
+
+### Added 🚀
+- **Hosted Verifier (Alpha)**: Production-ready hosted verifier at `verifier.agentoauth.org`
+- **API Key Authentication**: JWT-based API keys with organization quotas and tier management
+- **Rate Limiting**: Per-organization daily/monthly limits with KV-based storage
+- **Privacy-First Audit Logging**: Hash PII, store only necessary data for analytics
+- **Global Edge Deployment**: Cloudflare Workers for <50ms verification worldwide
+- **Usage Analytics**: Real-time quota monitoring and usage tracking
+- **Terms of Service**: Alpha service terms with privacy policy
+- **Demo Integration**: Hosted verifier support in demo merchant (`USE_HOSTED_VERIFIER=true`)
+
+### Enhanced 🔧
+- Remove self-hosting friction - no need to run your own verifier
+- Production deployment tools: `pnpm hosted:generate-keys`, `pnpm hosted:deploy`
+- Three-tier quota system: Free (1K/day), Pro (50K/day), Enterprise (500K/day)
+- CORS support for browser usage
+- Comprehensive error codes and suggestions
+- Real-time rate limit headers (`X-RateLimit-*`)
+
+### Security & Privacy 🔒
+- PII hashing with salted SHA-256
+- Amount ranges instead of exact values
+- No complete token storage
+- Minimal audit data collection
+- API key revocation support
+
+### Version Updates
+- All packages bumped to v0.6.0
+- `@agentoauth/hosted-verifier` new package
+- Documentation updated with deployment guides
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 

@@ -2,13 +2,23 @@
 
 A neutral protocol for AI agents to prove who authorized what. AgentOAuth provides verifiable authorization tokens with clear scope, limits, and expiration—built on OAuth/JWT patterns for maximum interoperability.
 
-**Status**: ✅ v0.5 Complete | 📦 19 Unit Tests + 23 Conformance Tests Passing | 🔐 Production Ready
+**Status**: ✅ v0.6 Complete | 📦 19 Unit Tests + 23 Conformance Tests Passing | 🔐 Production Ready
 
-**Latest v0.5**: 5-minute DX with ergonomic SDK, Express middleware, policy presets, Node/Cloudflare quickstarts
+**Latest v0.6**: Hosted verifier removes self-hosting friction, global edge deployment, privacy-first audit logging
 
 ## 🚀 5-Minute Quickstart
 
-**Three ways to get started - choose your platform:**
+**Four ways to get started - choose your platform:**
+
+### Option 0: Hosted Verifier (Zero Setup) ⭐
+```bash
+# Set API key for hosted verifier (get from alpha@agentoauth.org)
+export USE_HOSTED_VERIFIER=true
+export AGENTOAUTH_API_KEY="ak_your_api_key_here"
+
+# Run demo with hosted verification
+pnpm demo
+```
 
 ### Option 1: Express Middleware (Recommended)
 ```bash
@@ -184,6 +194,12 @@ pnpm demo
 See [SUPER_SIMPLE_START.md](SUPER_SIMPLE_START.md) or [ONE_COMMAND_SETUP.md](ONE_COMMAND_SETUP.md) for details.
 
 ## Resources
+
+### Hosted Verifier (v0.6) ⭐
+- 🌐 [Hosted Verifier](https://verifier.agentoauth.org) - Global edge deployment
+- 📖 [Deployment Guide](packages/hosted-verifier/README.md) - Setup your own instance
+- 🔑 [API Key Generator](packages/hosted-verifier/scripts/generate-keys.js) - Generate signing keys
+- 📊 [Terms & Privacy](https://verifier.agentoauth.org/terms) - Alpha service terms
 
 ### Core Protocol (v0.2)
 - 📖 [Specification](packages/spec/SPEC.md) — Complete protocol documentation

@@ -1,6 +1,6 @@
 {
   "name": "@agentoauth/agent-express",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Express middleware for AI agents to sign and send AgentOAuth tokens",
   "type": "module",
   "main": "dist/index.js",

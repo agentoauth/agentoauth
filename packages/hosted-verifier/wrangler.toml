@@ -1,0 +1,39 @@
+name = "agentoauth-verifier"
+main = "src/index.ts"
+compatibility_date = "2023-12-01"
+
+# Development environment
+[env.development]
+name = "agentoauth-verifier-dev"
+
+# Production environment
+[env.production]
+name = "agentoauth-verifier-prod"
+
+# Custom domain routing (update with your actual zone_name)
+[[env.production.routes]]
+pattern = "verifier.agentoauth.org/*"
+zone_name = "agentoauth.org"
+
+# KV namespace for rate limiting (create with: wrangler kv:namespace create "RATE_LIMIT_KV")
+[[env.production.kv_namespaces]]
+binding = "RATE_LIMIT_KV" 
+id = "your-kv-namespace-id"  # Replace with actual KV namespace ID
+preview_id = "your-preview-kv-id"  # Replace with actual preview KV namespace ID
+
+# R2 bucket for audit logs (create with: wrangler r2 bucket create agentoauth-audit-logs)
+[[env.production.r2_buckets]]
+binding = "AUDIT_LOGS_R2"
+bucket_name = "agentoauth-audit-logs"
+
+# Environment variables
+[env.production.vars]
+ENVIRONMENT = "production"
+
+# Secrets to set with wrangler secret put:
+# - API_KEY_PUBLIC_KEY: JSON string of the EdDSA public key for API key verification
+# - AUDIT_SALT: Random string for hashing PII in audit logs
+
+# Example commands to set secrets:
+# wrangler secret put API_KEY_PUBLIC_KEY --env production
+# wrangler secret put AUDIT_SALT --env production

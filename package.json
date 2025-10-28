@@ -1,6 +1,6 @@
 {
   "name": "agentoauth",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "description": "A neutral protocol for AI agent authorization",
   "scripts": {
@@ -16,7 +16,9 @@
     "test:conformance": "cd packages/conformance && pnpm build && pnpm test:local",
     "test:conformance:remote": "cd packages/conformance && pnpm build && pnpm test:remote",
     "quickstart:node": "cd quickstarts/node-express && npm install && npm run demo",
-    "quickstart:cf": "cd quickstarts/cloudflare-workers && npm install && npm run dev"
+    "quickstart:cf": "cd quickstarts/cloudflare-workers && npm install && npm run dev",
+    "hosted:generate-keys": "cd packages/hosted-verifier && npm run gen-keys",
+    "hosted:deploy": "cd packages/hosted-verifier && wrangler deploy --env production"
   },
   "keywords": ["oauth", "agent", "authorization", "jwt", "jws"],
   "author": "",

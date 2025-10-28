@@ -123,7 +123,10 @@ app.post('/api/payment', async (c) => {
     
     console.log(chalk.gray(`   Token hash: ${tokenHash}`));
 
-    const verifyResult = await verifyTokenLocal(authToken);
+    // Choose verification method
+    const verifyResult = USE_HOSTED_VERIFIER ? 
+      await verifyTokenHosted(authToken) : 
+      await verifyTokenLocal(authToken);
 
     if (!verifyResult.valid) {
       console.log(chalk.red(`❌ [${requestId}] Token verification failed: ${verifyResult.error}`));
@@ -251,6 +254,50 @@ app.get('/health', (c) => {
   });
 });
 
+// Configuration
+const USE_HOSTED_VERIFIER = process.env.USE_HOSTED_VERIFIER === 'true';
+const HOSTED_VERIFIER_API_KEY = process.env.AGENTOAUTH_API_KEY;
+
+// Hosted verifier integration
+const verifyTokenHosted = async (token) => {
+  try {
+    const response = await fetch('https://verifier.agentoauth.org/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': HOSTED_VERIFIER_API_KEY
+      },
+      body: JSON.stringify({ 
+        token, 
+        audience: 'merchant-demo'
+      })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      return { 
+        valid: false, 
+        error: errorData.error || 'Hosted verifier error',
+        code: errorData.code || 'HOSTED_VERIFIER_ERROR'
+      };
+    }
+    
+    const verificationData = await response.json();
+    return {
+      valid: verificationData.valid,
+      payload: verificationData.payload,
+      error: verificationData.error,
+      code: verificationData.code
+    };
+  } catch (error) {
+    return {
+      valid: false,
+      error: `Hosted verifier request failed: ${error.message}`,
+      code: 'HOSTED_VERIFIER_REQUEST_ERROR'
+    };
+  }
+};
+
 // Start server
 const port = Number(process.env.PORT) || 4000;
 
@@ -259,6 +306,19 @@ console.log(chalk.gray('━'.repeat(50)));
 console.log(chalk.gray(`Service: Merchant Payment Processor`));
 console.log(chalk.gray(`Port: ${port}`));
 console.log(chalk.gray(`Audience: merchant-demo`));
+
+if (USE_HOSTED_VERIFIER) {
+  if (!HOSTED_VERIFIER_API_KEY) {
+    console.error(chalk.red('❌ ERROR: AGENTOAUTH_API_KEY required when USE_HOSTED_VERIFIER=true'));
+    console.error(chalk.yellow('   Set environment variable: AGENTOAUTH_API_KEY=ak_your_api_key_here'));
+    process.exit(1);
+  }
+  console.log(chalk.blue(`Verifier: 🌐 Hosted (verifier.agentoauth.org)`));
+  console.log(chalk.gray(`API Key: ${HOSTED_VERIFIER_API_KEY.substring(0, 20)}...`));
+} else {
+  console.log(chalk.blue(`Verifier: 🏠 Local (demo mode - decode only)`));
+}
+
 console.log(chalk.gray('━'.repeat(50)));
 
 serve({
