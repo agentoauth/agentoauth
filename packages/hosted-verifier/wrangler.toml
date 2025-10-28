@@ -1,6 +1,7 @@
 name = "agentoauth-verifier"
 main = "src/index.ts"
-compatibility_date = "2023-12-01"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 
 # Development environment
 [env.development]
@@ -9,6 +10,7 @@ name = "agentoauth-verifier-dev"
 # Production environment
 [env.production]
 name = "agentoauth-verifier-prod"
+compatibility_flags = ["nodejs_compat"]
 
 # Custom domain routing (update with your actual zone_name)
 [[env.production.routes]]
@@ -18,8 +20,8 @@ zone_name = "agentoauth.org"
 # KV namespace for rate limiting (create with: wrangler kv:namespace create "RATE_LIMIT_KV")
 [[env.production.kv_namespaces]]
 binding = "RATE_LIMIT_KV" 
-id = "your-kv-namespace-id"  # Replace with actual KV namespace ID
-preview_id = "your-preview-kv-id"  # Replace with actual preview KV namespace ID
+id = "5bd6c83129b74f0081cd20ac55c6f6e5" # Replace with actual KV namespace ID
+preview_id = "9e574bf949bd435da4b95cf8dd3471ca"  # Replace with actual preview KV namespace ID
 
 # R2 bucket for audit logs (create with: wrangler r2 bucket create agentoauth-audit-logs)
 [[env.production.r2_buckets]]

@@ -7,6 +7,7 @@
     "demo": "bash demo.sh",
     "agent": "node agent.js",
     "merchant": "node merchant.js",
+    "test-hosted": "node test-hosted.js",
     "build": "echo 'No build needed for demo'",
     "lint": "echo 'No linting for demo'",
     "test": "echo 'No tests for demo'"

@@ -311,6 +311,42 @@ node agent.js  # Will create new keys
 - `SCENARIO.md` - Detailed scenarios
 - `keys/` - Generated keypairs (gitignored)
 
+## 🌐 Hosted Verifier Integration
+
+### Web Dashboard at http://localhost:4000
+
+The merchant now includes a **beautiful web dashboard** that shows:
+
+- ✅ **Verifier Mode**: Visual indicator of local vs hosted verification
+- 📊 **Real-time Stats**: Transaction count and total volume  
+- 🔑 **API Key Status**: Displays configured API key (masked)
+- 💳 **Live Transactions**: Recent payments with auto-refresh
+- 🌐 **Verification Details**: Service endpoint and audience info
+
+### Test with Hosted Verifier
+
+1. **Set up environment:**
+```bash
+export USE_HOSTED_VERIFIER=true
+export AGENTOAUTH_API_KEY="ak_your_generated_api_key"
+```
+
+2. **Test setup:**
+```bash
+pnpm test-hosted
+```
+
+3. **Start merchant:**
+```bash
+pnpm merchant
+```
+
+4. **Open dashboard:** `http://localhost:4000`
+
+5. **Generate payments:** `pnpm agent`
+
+The dashboard **auto-refreshes every 5 seconds** to show real-time verification results!
+
 ## License
 
 MIT AND Apache-2.0

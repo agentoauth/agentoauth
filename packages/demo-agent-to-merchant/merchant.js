@@ -244,13 +244,194 @@ app.get('/api/transactions', (c) => {
   });
 });
 
+// Web UI Dashboard
+app.get('/', (c) => {
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AgentOAuth Merchant Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; 
+      background: #f8fafc; 
+      color: #334155;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+    .header { 
+      background: white; 
+      padding: 24px; 
+      border-radius: 12px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+      margin-bottom: 24px; 
+    }
+    .status { 
+      display: inline-flex; 
+      align-items: center; 
+      padding: 6px 12px; 
+      border-radius: 20px; 
+      font-size: 14px; 
+      font-weight: 500;
+    }
+    .status.hosted { background: #dbeafe; color: #1e40af; }
+    .status.local { background: #fef3c7; color: #92400e; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .card { 
+      background: white; 
+      padding: 24px; 
+      border-radius: 12px; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+    }
+    .card h3 { margin-bottom: 16px; color: #1e293b; }
+    .metric { margin-bottom: 12px; }
+    .metric-label { font-size: 14px; color: #64748b; margin-bottom: 4px; }
+    .metric-value { font-size: 24px; font-weight: 600; }
+    .transactions { 
+      background: white; 
+      border-radius: 12px; 
+      overflow: hidden; 
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+    }
+    .transactions-header { 
+      padding: 24px; 
+      border-bottom: 1px solid #e2e8f0; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+    }
+    .transaction { 
+      padding: 16px 24px; 
+      border-bottom: 1px solid #f1f5f9; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+    }
+    .transaction:last-child { border-bottom: none; }
+    .transaction-details { flex: 1; }
+    .transaction-amount { font-weight: 600; color: #059669; }
+    .transaction-meta { font-size: 14px; color: #64748b; margin-top: 4px; }
+    .empty { text-align: center; padding: 40px; color: #64748b; }
+    .refresh-btn { 
+      background: #3b82f6; 
+      color: white; 
+      border: none; 
+      padding: 8px 16px; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      font-size: 14px;
+    }
+    .refresh-btn:hover { background: #2563eb; }
+    .api-key { 
+      font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace; 
+      background: #f1f5f9; 
+      padding: 8px 12px; 
+      border-radius: 6px; 
+      font-size: 12px; 
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>💰 AgentOAuth Merchant Dashboard</h1>
+      <p style="margin: 12px 0; color: #64748b;">Real-time payment verification and transaction monitoring</p>
+      
+      <div style="margin-top: 16px;">
+        <strong>Verifier Mode:</strong>
+        <span class="status ${USE_HOSTED_VERIFIER ? 'hosted' : 'local'}">
+          ${USE_HOSTED_VERIFIER ? '🌐 Hosted (verifier.agentoauth.org)' : '🏠 Local (demo mode)'}
+        </span>
+      </div>
+      
+      ${USE_HOSTED_VERIFIER && HOSTED_VERIFIER_API_KEY ? `
+        <div style="margin-top: 12px;">
+          <div class="metric-label">API Key</div>
+          <div class="api-key">${HOSTED_VERIFIER_API_KEY.substring(0, 30)}...</div>
+        </div>
+      ` : ''}
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>📊 Transaction Stats</h3>
+        <div class="metric">
+          <div class="metric-label">Total Transactions</div>
+          <div class="metric-value">${transactions.length}</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Total Volume</div>
+          <div class="metric-value">$${transactions.reduce((sum, t) => sum + t.amount, 0).toFixed(2)}</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>🔐 Verification Info</h3>
+        <div class="metric">
+          <div class="metric-label">Service Endpoint</div>
+          <div style="font-family: monospace; font-size: 14px;">
+            ${USE_HOSTED_VERIFIER ? 'verifier.agentoauth.org' : 'localhost (decode only)'}
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Expected Audience</div>
+          <div style="font-family: monospace; font-size: 14px;">merchant-demo</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="transactions">
+      <div class="transactions-header">
+        <h3>💳 Recent Transactions</h3>
+        <button class="refresh-btn" onclick="location.reload()">Refresh</button>
+      </div>
+      
+      ${transactions.length === 0 ? `
+        <div class="empty">
+          <p>No transactions yet</p>
+          <p style="margin-top: 8px; font-size: 14px;">Run the agent script to generate payments</p>
+        </div>
+      ` : transactions.slice(-10).reverse().map(t => `
+        <div class="transaction">
+          <div class="transaction-details">
+            <div><strong>${t.description || 'Payment'}</strong></div>
+            <div class="transaction-meta">
+              ${t.authorizedBy} → ${t.agent} | ${t.timestamp.split('T')[1].split('.')[0]}
+            </div>
+          </div>
+          <div class="transaction-amount">$${t.amount.toFixed(2)} ${t.currency}</div>
+        </div>
+      `).join('')}
+    </div>
+    
+    <div style="margin-top: 24px; text-align: center; color: #64748b; font-size: 14px;">
+      <p>🔄 Auto-refresh page to see new transactions</p>
+      <p style="margin-top: 8px;">
+        Test endpoint: <code>POST http://localhost:${port}/api/payment</code>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    // Auto-refresh every 5 seconds
+    setTimeout(() => location.reload(), 5000);
+  </script>
+</body>
+</html>`;
+  
+  return c.html(html);
+});
+
 // Health check
 app.get('/health', (c) => {
   return c.json({
     status: 'ok',
     service: 'merchant-demo',
     version: '0.1.0',
-    transactionCount: transactions.length
+    transactionCount: transactions.length,
+    verifierMode: USE_HOSTED_VERIFIER ? 'hosted' : 'local',
+    apiKeySet: !!HOSTED_VERIFIER_API_KEY
   });
 });
 
@@ -326,9 +507,10 @@ serve({
   port
 }, (info) => {
   console.log(chalk.green(`\n✅ Merchant server listening on http://localhost:${info.port}`));
-  console.log(chalk.gray(`   Payment endpoint: POST /api/payment`));
-  console.log(chalk.gray(`   Transactions: GET /api/transactions`));
-  console.log(chalk.gray(`   Health: GET /health`));
+  console.log(chalk.gray(`   🌐 Dashboard: http://localhost:${info.port}`));
+  console.log(chalk.gray(`   📡 Payment API: POST /api/payment`));
+  console.log(chalk.gray(`   📊 Transactions: GET /api/transactions`));
+  console.log(chalk.gray(`   🔍 Health: GET /health`));
   console.log(chalk.yellow('\n⏳ Waiting for payment requests...\n'));
 });
 

@@ -7,8 +7,7 @@
  * and creates a demo API key for testing.
  */
 
-import { generateKeyPair, exportJWK } from 'jose';
-import { generateApiKey } from '../src/auth.js';
+import { generateKeyPair, exportJWK, SignJWT } from 'jose';
 
 async function generateKeys() {
   console.log('🔑 Generating AgentOAuth Hosted Verifier Keys\n');
@@ -45,7 +44,22 @@ async function generateKeys() {
     tier: 'free'
   };
   
-  const demoApiKey = await generateApiKey(demoOrg, privateKey);
+  // Inline API key generation (standalone)
+  const payload = {
+    sub: demoOrg.id,
+    name: demoOrg.name,
+    tier: demoOrg.tier,
+    quotas: { daily: 1000, monthly: 10000 }, // Free tier quotas
+    iss: 'agentoauth.org',
+    exp: Math.floor(Date.now() / 1000) + (365 * 24 * 60 * 60) // 1 year
+  };
+  
+  const jwt = await new SignJWT(payload)
+    .setProtectedHeader({ alg: 'EdDSA' })
+    .setIssuedAt()
+    .sign(privateKey);
+    
+  const demoApiKey = `ak_${jwt}`;
   
   console.log('✅ Demo API key generated\n');
   
