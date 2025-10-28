@@ -1,0 +1,23 @@
+{
+  "name": "agentoauth-cloudflare-quickstart",
+  "version": "1.0.0",
+  "description": "5-minute quickstart for AgentOAuth with Cloudflare Workers",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "agent:dev": "wrangler dev src/agent.ts --name agentoauth-agent",
+    "merchant:dev": "wrangler dev src/merchant.ts --name agentoauth-merchant"
+  },
+  "dependencies": {
+    "@agentoauth/sdk": "workspace:*"
+  },
+  "devDependencies": {
+    "wrangler": "^3.15.0",
+    "@cloudflare/workers-types": "^4.20231016.0",
+    "typescript": "^5.3.3"
+  },
+  "keywords": ["agentoauth", "cloudflare", "workers", "quickstart"],
+  "author": "",
+  "license": "MIT"
+}

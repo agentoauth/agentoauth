@@ -1,0 +1,28 @@
+{
+  "name": "@agentoauth/merchant-express",
+  "version": "0.5.0", 
+  "description": "Express middleware for merchants to extract and validate AgentOAuth tokens",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "echo 'No linting for merchant-express'",
+    "test": "echo 'No tests for merchant-express'"
+  },
+  "dependencies": {
+    "@agentoauth/sdk": "workspace:*",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "typescript": "^5.3.3"
+  },
+  "keywords": ["agentoauth", "express", "middleware", "merchant", "oauth"],
+  "author": "",
+  "license": "MIT AND Apache-2.0"
+}

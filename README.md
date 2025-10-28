@@ -2,11 +2,35 @@
 
 A neutral protocol for AI agents to prove who authorized what. AgentOAuth provides verifiable authorization tokens with clear scope, limits, and expiration—built on OAuth/JWT patterns for maximum interoperability.
 
-**Status**: ✅ v0.4 Complete | 📦 19 Unit Tests + 23 Conformance Tests Passing | 🔐 Production Ready
+**Status**: ✅ v0.5 Complete | 📦 19 Unit Tests + 23 Conformance Tests Passing | 🔐 Production Ready
 
-**Latest v0.4**: Formal OpenAPI specification, comprehensive conformance testing, cross-language test vectors, automated badge generation
+**Latest v0.5**: 5-minute DX with ergonomic SDK, Express middleware, policy presets, Node/Cloudflare quickstarts
 
 ## 🚀 5-Minute Quickstart
+
+**Three ways to get started - choose your platform:**
+
+### Option 1: Express Middleware (Recommended)
+```bash
+# Complete agent-to-merchant flow with middleware
+pnpm quickstart:node
+
+# Or manually:
+cd quickstarts/node-express
+npm install && npm run demo
+```
+
+### Option 2: Cloudflare Workers (Edge Deployment)
+```bash
+# Deploy to Cloudflare's global edge network
+pnpm quickstart:cf
+
+# Or manually:
+cd quickstarts/cloudflare-workers
+npm install && npx wrangler dev
+```
+
+### Option 3: Direct SDK (Low-Level)
 
 **Complete walkthrough from setup to revocation:**
 
@@ -161,16 +185,27 @@ See [SUPER_SIMPLE_START.md](SUPER_SIMPLE_START.md) or [ONE_COMMAND_SETUP.md](ONE
 
 ## Resources
 
-- 📖 [Specification](packages/spec/SPEC.md) — Complete protocol documentation (v0.2)
-- 📋 [OpenAPI Spec](packages/spec/openapi.yaml) — Formal API specification (v0.4)
-- 🔧 [JavaScript SDK](packages/sdk-js) — Node.js and browser support (19 tests)
-- 🎮 [Playground](packages/playground) — Interactive validator with copy buttons & samples
+### Core Protocol (v0.2)
+- 📖 [Specification](packages/spec/SPEC.md) — Complete protocol documentation
+- 📋 [OpenAPI Spec](packages/spec/openapi.yaml) — Formal API specification
+- 🔧 [JavaScript SDK](packages/sdk-js) — Enhanced with 15+ ergonomic functions
 - 🔐 [Verifier API](packages/verifier-api) — Reference implementation with revocation
+
+### 5-Minute Developer Experience (v0.5)
+- 🚀 [Node/Express Quickstart](quickstarts/node-express/) — Complete middleware examples
+- ⚡ [Cloudflare Workers Quickstart](quickstarts/cloudflare-workers/) — Edge deployment
+- 🤖 [Agent Express Middleware](packages/agent-express/) — Auto-signing middleware
+- 🏪 [Merchant Express Middleware](packages/merchant-express/) — Validation middleware
+
+### Testing & Validation
 - 🧪 [Conformance Tests](packages/conformance) — 23+ test cases & cross-language vectors
+- 🎮 [Playground](packages/playground) — Interactive validator with copy buttons & samples
 - 🎬 [Agent→Merchant Demo](packages/demo-agent-to-merchant) — End-to-end payment flow
 - 💡 [Examples](packages/examples) — issue-token.js, verify-token.js scripts
 - 📮 [Postman Collection](postman/) — API testing collection
-- 📝 [Changelog](CHANGELOG.md) — Version history
+
+### Documentation
+- 📝 [Changelog](CHANGELOG.md) — Version history and release notes
 
 ## Architecture
 

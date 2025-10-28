@@ -1,0 +1,16 @@
+name = "agentoauth-quickstart"
+main = "src/agent.ts"
+compatibility_date = "2023-10-16"
+
+[env.agent]
+name = "agentoauth-agent"
+main = "src/agent.ts"
+
+[env.merchant]
+name = "agentoauth-merchant"
+main = "src/merchant.ts"
+
+# Environment variables for keys (set these with wrangler secret put)
+# AGENTOAUTH_PRIVATE_KEY - Private key for signing (agent only)
+# AGENTOAUTH_PUBLIC_KEY - Public key for verification (merchant only)
+# MERCHANT_API_URL - URL of the merchant API (agent only)

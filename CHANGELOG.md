@@ -5,6 +5,32 @@ All notable changes to the AgentOAuth protocol will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-10-28
+
+### Added - SDK Ergonomics & Adapters (5-Minute DX)
+- **Ergonomic SDK Functions**: `issueConsent()`, `verifyConsent()`, `revokeConsent()`, `rotateKeys()` with auto key management
+- **Policy Builder**: `buildPolicy()` with configurable presets (payment, read, admin, custom)
+- **Key Management**: Auto-detection key loading from env vars, files, or JWKS URLs
+- **Agent Express Middleware**: `@agentoauth/agent-express` for automatic request signing
+- **Merchant Express Middleware**: `@agentoauth/merchant-express` for token validation
+- **Pre-configured Middleware**: `AgentAuth.payment()`, `MerchantAuth.payment()` with safe defaults
+- **Node/Express Quickstart**: Complete 5-minute quickstart with agent and merchant examples
+- **Cloudflare Workers Quickstart**: Edge deployment examples for global scale
+- **Comprehensive Documentation**: Step-by-step guides and production patterns
+
+### Enhanced
+- **SDK API Surface**: Expanded from 3 to 15+ functions for complete DX
+- **Error Handling**: Clear error messages with actionable suggestions
+- **Developer Experience**: Zero-config key generation and policy management
+- **Express Integration**: Seamless middleware patterns for both agents and merchants
+- **Production Readiness**: Error handling, logging, and monitoring examples
+
+### Developer Experience
+- **5-Minute Setup**: From zero to verified agent-to-merchant flow in under 5 minutes
+- **Copy-Paste Ready**: Production-ready code examples for common patterns
+- **Multiple Platforms**: Express, Cloudflare Workers, with more coming
+- **Clear Migration Path**: Backward compatible with existing v0.4 implementations
+
 ## [0.4.0] - 2025-10-28
 
 ### Added

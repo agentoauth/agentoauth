@@ -1,0 +1,28 @@
+{
+  "name": "@agentoauth/agent-express",
+  "version": "0.5.0",
+  "description": "Express middleware for AI agents to sign and send AgentOAuth tokens",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "lint": "echo 'No linting for agent-express'",
+    "test": "echo 'No tests for agent-express'"
+  },
+  "dependencies": {
+    "@agentoauth/sdk": "workspace:*",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "typescript": "^5.3.3"
+  },
+  "keywords": ["agentoauth", "express", "middleware", "agent", "oauth"],
+  "author": "",
+  "license": "MIT AND Apache-2.0"
+}

@@ -1,0 +1,26 @@
+{
+  "name": "agentoauth-node-quickstart",
+  "version": "1.0.0",
+  "description": "5-minute quickstart for AgentOAuth with Node.js and Express",
+  "type": "module",
+  "scripts": {
+    "demo": "concurrently \"node merchant.js\" \"sleep 2 && node agent.js\" \"sleep 4 && node test.js\"",
+    "merchant": "node merchant.js",
+    "agent": "node agent.js",
+    "test": "node test.js",
+    "setup": "npm install"
+  },
+  "dependencies": {
+    "@agentoauth/agent-express": "workspace:*",
+    "@agentoauth/merchant-express": "workspace:*",
+    "@agentoauth/sdk": "workspace:*",
+    "express": "^4.18.2",
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
+  },
+  "keywords": ["agentoauth", "quickstart", "express", "demo"],
+  "author": "",
+  "license": "MIT"
+}
