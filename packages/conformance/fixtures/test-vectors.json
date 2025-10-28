@@ -1,0 +1,109 @@
+{
+  "description": "Test vectors for JSON canonicalization and signature base generation",
+  "version": "0.2.0",
+  "vectors": [
+    {
+      "name": "basic-payload",
+      "description": "Standard v0.2 payload canonicalization",
+      "input": {
+        "ver": "0.2",
+        "jti": "550e8400-e29b-41d4-a716-446655440000",
+        "user": "did:example:alice",
+        "agent": "payment-bot",
+        "scope": "pay:merchant",
+        "limit": {"currency": "USD", "amount": 1000},
+        "aud": "merchant.example",
+        "exp": 1640995200,
+        "nonce": "abc123def456"
+      },
+      "canonicalized": "{\"aud\":\"merchant.example\",\"agent\":\"payment-bot\",\"exp\":1640995200,\"jti\":\"550e8400-e29b-41d4-a716-446655440000\",\"limit\":{\"amount\":1000,\"currency\":\"USD\"},\"nonce\":\"abc123def456\",\"scope\":\"pay:merchant\",\"user\":\"did:example:alice\",\"ver\":\"0.2\"}",
+      "base64url": "eyJhdWQiOiJtZXJjaGFudC5leGFtcGxlIiwiYWdlbnQiOiJwYXltZW50LWJvdCIsImV4cCI6MTY0MDk5NTIwMCwianRpIjoiNTUwZTg0MDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAwIiwibGltaXQiOnsiYW1vdW50IjoxMDAwLCJjdXJyZW5jeSI6IlVTRCJ9LCJub25jZSI6ImFiYzEyM2RlZjQ1NiIsInNjb3BlIjoicGF5Om1lcmNoYW50IiwidXNlciI6ImRpZDpleGFtcGxlOmFsaWNlIiwidmVyIjoiMC4yIn0",
+      "signatureBase": "eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xNzI5NTEyMzQ1IiwidHlwIjoiSldUIn0.eyJhdWQiOiJtZXJjaGFudC5leGFtcGxlIiwiYWdlbnQiOiJwYXltZW50LWJvdCIsImV4cCI6MTY0MDk5NTIwMCwianRpIjoiNTUwZTg0MDAtZTI5Yi00MWQ0LWE3MTYtNDQ2NjU1NDQwMDAwIiwibGltaXQiOnsiYW1vdW50IjoxMDAwLCJjdXJyZW5jeSI6IlVTRCJ9LCJub25jZSI6ImFiYzEyM2RlZjQ1NiIsInNjb3BlIjoicGF5Om1lcmNoYW50IiwidXNlciI6ImRpZDpleGFtcGxlOmFsaWNlIiwidmVyIjoiMC4yIn0"
+    },
+    {
+      "name": "minimal-payload-v02",
+      "description": "Minimal v0.2 payload (no audience)",
+      "input": {
+        "ver": "0.2",
+        "jti": "minimal-test-uuid-1234",
+        "user": "did:example:bob",
+        "agent": "minimal-agent",
+        "scope": "read",
+        "limit": {"amount": 100, "currency": "EUR"},
+        "exp": 1735689600,
+        "nonce": "min-nonce"
+      },
+      "canonicalized": "{\"agent\":\"minimal-agent\",\"exp\":1735689600,\"jti\":\"minimal-test-uuid-1234\",\"limit\":{\"amount\":100,\"currency\":\"EUR\"},\"nonce\":\"min-nonce\",\"scope\":\"read\",\"user\":\"did:example:bob\",\"ver\":\"0.2\"}",
+      "base64url": "eyJhZ2VudCI6Im1pbmltYWwtYWdlbnQiLCJleHAiOjE3MzU2ODk2MDAsImp0aSI6Im1pbmltYWwtdGVzdC11dWlkLTEyMzQiLCJsaW1pdCI6eyJhbW91bnQiOjEwMCwiY3VycmVuY3kiOiJFVVIifSwibm9uY2UiOiJtaW4tbm9uY2UiLCJzY29wZSI6InJlYWQiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6Ym9iIiwidmVyIjoiMC4yIn0",
+      "signatureBase": "eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xNzI5NTEyMzQ1IiwidHlwIjoiSldUIn0.eyJhZ2VudCI6Im1pbmltYWwtYWdlbnQiLCJleHAiOjE3MzU2ODk2MDAsImp0aSI6Im1pbmltYWwtdGVzdC11dWlkLTEyMzQiLCJsaW1pdCI6eyJhbW91bnQiOjEwMCwiY3VycmVuY3kiOiJFVVIifSwibm9uY2UiOiJtaW4tbm9uY2UiLCJzY29wZSI6InJlYWQiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6Ym9iIiwidmVyIjoiMC4yIn0"
+    },
+    {
+      "name": "legacy-payload-v01",
+      "description": "Legacy v0.1 payload (no jti field)",
+      "input": {
+        "ver": "0.1",
+        "user": "did:example:carol", 
+        "agent": "legacy-agent",
+        "scope": "pay:merchant",
+        "limit": {"amount": 500, "currency": "GBP"},
+        "aud": "legacy.merchant.com",
+        "exp": 1640995200,
+        "nonce": "legacy-nonce-xyz"
+      },
+      "canonicalized": "{\"agent\":\"legacy-agent\",\"aud\":\"legacy.merchant.com\",\"exp\":1640995200,\"limit\":{\"amount\":500,\"currency\":\"GBP\"},\"nonce\":\"legacy-nonce-xyz\",\"scope\":\"pay:merchant\",\"user\":\"did:example:carol\",\"ver\":\"0.1\"}",
+      "base64url": "eyJhZ2VudCI6ImxlZ2FjeS1hZ2VudCIsImF1ZCI6ImxlZ2FjeS5tZXJjaGFudC5jb20iLCJleHAiOjE2NDA5OTUyMDAsImxpbWl0Ijp7ImFtb3VudCI6NTAwLCJjdXJyZW5jeSI6IkdCUCJ9LCJub25jZSI6ImxlZ2FjeS1ub25jZS14eXoiLCJzY29wZSI6InBheTptZXJjaGFudCIsInVzZXIiOiJkaWQ6ZXhhbXBsZTpjYXJvbCIsInZlciI6IjAuMSJ9",
+      "signatureBase": "eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xNzI5NTEyMzQ1IiwidHlwIjoiSldUIn0.eyJhZ2VudCI6ImxlZ2FjeS1hZ2VudCIsImF1ZCI6ImxlZ2FjeS5tZXJjaGFudC5jb20iLCJleHAiOjE2NDA5OTUyMDAsImxpbWl0Ijp7ImFtb3VudCI6NTAwLCJjdXJyZW5jeSI6IkdCUCJ9LCJub25jZSI6ImxlZ2FjeS1ub25jZS14eXoiLCJzY29wZSI6InBheTptZXJjaGFudCIsInVzZXIiOiJkaWQ6ZXhhbXBsZTpjYXJvbCIsInZlciI6IjAuMSJ9"
+    },
+    {
+      "name": "complex-scope-payload",
+      "description": "Payload with complex scope containing special characters",
+      "input": {
+        "ver": "0.2",
+        "jti": "complex-scope-test-id",
+        "user": "did:example:enterprise-user",
+        "agent": "enterprise-agent-v2.1",
+        "scope": "pay:merchant.wallet.transfer_admin:high-value",
+        "limit": {"amount": 1000000, "currency": "USD"},
+        "aud": "enterprise.payments.example.com",
+        "exp": 1767225600,
+        "nonce": "enterprise-nonce-2024-secure"
+      },
+      "canonicalized": "{\"agent\":\"enterprise-agent-v2.1\",\"aud\":\"enterprise.payments.example.com\",\"exp\":1767225600,\"jti\":\"complex-scope-test-id\",\"limit\":{\"amount\":1000000,\"currency\":\"USD\"},\"nonce\":\"enterprise-nonce-2024-secure\",\"scope\":\"pay:merchant.wallet.transfer_admin:high-value\",\"user\":\"did:example:enterprise-user\",\"ver\":\"0.2\"}",
+      "base64url": "eyJhZ2VudCI6ImVudGVycHJpc2UtYWdlbnQtdjIuMSIsImF1ZCI6ImVudGVycHJpc2UucGF5bWVudHMuZXhhbXBsZS5jb20iLCJleHAiOjE3NjcyMjU2MDAsImp0aSI6ImNvbXBsZXgtc2NvcGUtdGVzdC1pZCIsImxpbWl0Ijp7ImFtb3VudCI6MTAwMDAwMCwiY3VycmVuY3kiOiJVU0QifSwibm9uY2UiOiJlbnRlcnByaXNlLW5vbmNlLTIwMjQtc2VjdXJlIiwic2NvcGUiOiJwYXk6bWVyY2hhbnQud2FsbGV0LnRyYW5zZmVyX2FkbWluOmhpZ2gtdmFsdWUiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6ZW50ZXJwcmlzZS11c2VyIiwidmVyIjoiMC4yIn0",
+      "signatureBase": "eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xNzI5NTEyMzQ1IiwidHlwIjoiSldUIn0.eyJhZ2VudCI6ImVudGVycHJpc2UtYWdlbnQtdjIuMSIsImF1ZCI6ImVudGVycHJpc2UucGF5bWVudHMuZXhhbXBsZS5jb20iLCJleHAiOjE3NjcyMjU2MDAsImp0aSI6ImNvbXBsZXgtc2NvcGUtdGVzdC1pZCIsImxpbWl0Ijp7ImFtb3VudCI6MTAwMDAwMCwiY3VycmVuY3kiOiJVU0QifSwibm9uY2UiOiJlbnRlcnByaXNlLW5vbmNlLTIwMjQtc2VjdXJlIiwic2NvcGUiOiJwYXk6bWVyY2hhbnQud2FsbGV0LnRyYW5zZmVyX2FkbWluOmhpZ2gtdmFsdWUiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6ZW50ZXJwcmlzZS11c2VyIiwidmVyIjoiMC4yIn0"
+    },
+    {
+      "name": "unicode-content-payload",
+      "description": "Payload containing Unicode characters (internationalization test)",
+      "input": {
+        "ver": "0.2",
+        "jti": "unicode-test-🌍-id",
+        "user": "did:example:用户",
+        "agent": "multi-lang-agent",
+        "scope": "read:data",
+        "limit": {"amount": 1500, "currency": "JPY"},
+        "aud": "グローバル.example.jp",
+        "exp": 1735689600,
+        "nonce": "unicode-nonce-🔐-secure"
+      },
+      "canonicalized": "{\"agent\":\"multi-lang-agent\",\"aud\":\"グローバル.example.jp\",\"exp\":1735689600,\"jti\":\"unicode-test-🌍-id\",\"limit\":{\"amount\":1500,\"currency\":\"JPY\"},\"nonce\":\"unicode-nonce-🔐-secure\",\"scope\":\"read:data\",\"user\":\"did:example:用户\",\"ver\":\"0.2\"}",
+      "base64url": "eyJhZ2VudCI6Im11bHRpLWxhbmctYWdlbnQiLCJhdWQiOiLjgrDjg63jg7zjg5Djg6suZXhhbXBsZS5qcCIsImV4cCI6MTczNTY4OTYwMCwianRpIjoidW5pY29kZS10ZXN0LfCfjI0taWQiLCJsaW1pdCI6eyJhbW91bnQiOjE1MDAsImN1cnJlbmN5IjoiSlBZIn0sIm5vbmNlIjoidW5pY29kZS1ub25jZS3wn5OQLXNLY3VyZSIsInNjb3BlIjoicmVhZDpkYXRhIiwidXNlciI6ImRpZDpleGFtcGxlOueUqOaItyIsInZlciI6IjAuMiJ9",
+      "signatureBase": "eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xNzI5NTEyMzQ1IiwidHlwIjoiSldUIn0.eyJhZ2VudCI6Im11bHRpLWxhbmctYWdlbnQiLCJhdWQiOiLjgrDjg63jg7zjg5Djg6suZXhhbXBsZS5qcCIsImV4cCI6MTczNTY4OTYwMCwianRpIjoidW5pY29kZS10ZXN0LfCfjI0taWQiLCJsaW1pdCI6eyJhbW91bnQiOjE1MDAsImN1cnJlbmN5IjoiSlBZIn0sIm5vbmNlIjoidW5pY29kZS1ub25jZS3wn5OQLXNLY3VyZSIsInNjb3BlIjoicmVhZDpkYXRhIiwidXNlciI6ImRpZDpleGFtcGxlOueUqOaItyIsInZlciI6IjAuMiJ9"
+    }
+  ],
+  "implementation_notes": [
+    "JSON canonicalization follows RFC 8785 (JCS) principles",
+    "Object keys are sorted lexicographically", 
+    "No whitespace is included in canonicalized output",
+    "Unicode characters are preserved in UTF-8 encoding",
+    "Base64URL encoding follows RFC 4648 Section 5 (no padding)",
+    "Signature base is header.payload in base64url format",
+    "These vectors can be used to validate cross-language implementations"
+  ],
+  "test_instructions": {
+    "canonicalization": "Parse input JSON, sort keys recursively, stringify without whitespace",
+    "base64url_encoding": "Encode canonicalized JSON to base64url (no padding)",
+    "signature_base": "Combine base64url header and payload with '.' separator",
+    "validation": "Compare your implementation output with expected values"
+  }
+}

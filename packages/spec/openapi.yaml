@@ -1,0 +1,408 @@
+openapi: 3.0.3
+info:
+  title: AgentOAuth Verifier API
+  version: 0.2.0
+  description: Reference implementation of AgentOAuth token verification
+  license:
+    name: MIT AND Apache-2.0
+    url: https://github.com/agentoauth/agentoauth
+  contact:
+    name: AgentOAuth
+    url: https://github.com/agentoauth/agentoauth
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://your-deployment.com
+    description: Production deployment
+paths:
+  /.well-known/jwks.json:
+    get:
+      summary: JSON Web Key Set
+      description: Returns public keys for token verification
+      operationId: getJWKS
+      responses:
+        200:
+          description: JWKS with public keys
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JWKS'
+              example:
+                keys:
+                  - kty: OKP
+                    crv: Ed25519
+                    x: "11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHURo"
+                    kid: key-1729512345
+                    use: sig
+                    alg: EdDSA
+        500:
+          description: Keys not initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          
+  /verify:
+    post:
+      summary: Verify AgentOAuth Token
+      description: Validates token signature, expiration, audience, revocation, and replay
+      operationId: verifyToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyRequest'
+            example:
+              token: "eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xNzI5NTEyMzQ1IiwidHlwIjoiSldUIn0..."
+              audience: "merchant.example"
+      responses:
+        200:
+          description: Verification result (valid or invalid)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyResponse'
+              examples:
+                valid:
+                  summary: Valid token
+                  value:
+                    valid: true
+                    payload:
+                      ver: "0.2"
+                      jti: "550e8400-e29b-41d4-a716-446655440000"
+                      user: "did:example:alice"
+                      agent: "payment-bot"
+                      scope: "pay:merchant"
+                      limit:
+                        amount: 1000
+                        currency: "USD"
+                      aud: "merchant.example"
+                      exp: 1735689600
+                      nonce: "abc123def456"
+                invalid:
+                  summary: Invalid signature
+                  value:
+                    valid: false
+                    error: "Invalid signature"
+                    code: "INVALID_SIGNATURE"
+        400:
+          description: Invalid request format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+          
+  /revoke:
+    post:
+      summary: Revoke Token by JTI
+      description: Adds token to revocation list by JWT ID
+      operationId: revokeToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequest'
+            example:
+              jti: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        200:
+          description: Revocation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevokeResponse'
+              examples:
+                success:
+                  summary: Successfully revoked
+                  value:
+                    success: true
+                    jti: "550e8400-e29b-41d4-a716-446655440000"
+                    revokedAt: "2025-01-01T12:00:00.000Z"
+                already_revoked:
+                  summary: Already revoked
+                  value:
+                    success: false
+                    error: "Token already revoked"
+                    jti: "550e8400-e29b-41d4-a716-446655440000"
+                
+  /health:
+    get:
+      summary: Health Check
+      description: Returns service health and statistics
+      operationId: getHealth
+      responses:
+        200:
+          description: Service health status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: "ok"
+                service: "agentoauth-verifier"
+                version: "0.2.0"
+                timestamp: "2025-01-01T12:00:00.000Z"
+                uptime: 3661.234
+                keyId: "key-1729512345"
+                revoked: 5
+                replayCache: 42
+
+  /demo/create-token:
+    post:
+      summary: Create Demo Token (Development Only)
+      description: Creates a demo token for testing purposes
+      operationId: createDemoToken
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoTokenRequest'
+      responses:
+        200:
+          description: Demo token created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoTokenResponse'
+          
+components:
+  schemas:
+    JWKS:
+      type: object
+      required: [keys]
+      properties:
+        keys:
+          type: array
+          items:
+            $ref: '#/components/schemas/JWK'
+            
+    JWK:
+      type: object
+      required: [kty, crv, x, kid, use, alg]
+      properties:
+        kty:
+          type: string
+          enum: [OKP]
+        crv:
+          type: string
+          enum: [Ed25519]
+        x:
+          type: string
+          description: Base64url-encoded public key
+        kid:
+          type: string
+          description: Key identifier
+        use:
+          type: string
+          enum: [sig]
+        alg:
+          type: string
+          enum: [EdDSA]
+            
+    VerifyRequest:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: JWS compact token (header.payload.signature)
+          pattern: '^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$'
+        audience:
+          type: string
+          description: Expected audience (optional)
+          minLength: 1
+          
+    VerifyResponse:
+      type: object
+      required: [valid]
+      properties:
+        valid:
+          type: boolean
+          description: Whether the token is valid
+        payload:
+          $ref: '#/components/schemas/AgentOAuthPayload'
+        error:
+          type: string
+          description: Error message (if invalid)
+        code:
+          type: string
+          description: Error code for programmatic handling
+          enum: [INVALID_SIGNATURE, EXPIRED, INVALID_AUDIENCE, INVALID_PAYLOAD, INVALID_VERSION, REVOKED, REPLAY, NETWORK_ERROR]
+          
+    AgentOAuthPayload:
+      type: object
+      required: [ver, user, agent, scope, limit, exp, nonce]
+      properties:
+        ver:
+          type: string
+          enum: ["0.2", "0.1"]
+          description: Protocol version
+        jti:
+          type: string
+          minLength: 8
+          description: JWT ID (required in v0.2)
+        user:
+          type: string
+          minLength: 1
+          description: User identifier (DID or stable ID)
+        agent:
+          type: string
+          minLength: 1
+          description: Agent identifier
+        scope:
+          type: string
+          minLength: 1
+          pattern: '^[a-zA-Z0-9_:.\\-]+$'
+          description: OAuth-style scope
+        limit:
+          type: object
+          required: [amount, currency]
+          properties:
+            amount:
+              type: number
+              minimum: 0
+              description: Maximum amount
+            currency:
+              type: string
+              pattern: '^[A-Z]{3}$'
+              description: 3-letter currency code
+        aud:
+          type: string
+          minLength: 1
+          description: Audience (optional)
+        exp:
+          type: integer
+          minimum: 0
+          description: Expiration timestamp (Unix seconds)
+        nonce:
+          type: string
+          minLength: 8
+          description: Nonce for replay protection
+          
+    RevokeRequest:
+      type: object
+      required: [jti]
+      properties:
+        jti:
+          type: string
+          minLength: 8
+          description: JWT ID of token to revoke
+          
+    RevokeResponse:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          description: Whether revocation succeeded
+        jti:
+          type: string
+          description: JWT ID that was revoked
+        revokedAt:
+          type: string
+          format: date-time
+          description: Revocation timestamp
+        error:
+          type: string
+          description: Error message (if failed)
+          
+    HealthResponse:
+      type: object
+      required: [status, service, version, timestamp, uptime]
+      properties:
+        status:
+          type: string
+          enum: [ok, error]
+        service:
+          type: string
+          example: agentoauth-verifier
+        version:
+          type: string
+          example: "0.2.0"
+        timestamp:
+          type: string
+          format: date-time
+        uptime:
+          type: number
+          description: Uptime in seconds
+        keyId:
+          type: string
+          description: Current primary key ID
+        revoked:
+          type: integer
+          description: Number of revoked tokens
+        replayCache:
+          type: integer
+          description: Size of replay cache
+          
+    DemoTokenRequest:
+      type: object
+      properties:
+        user:
+          type: string
+          default: "did:example:alice"
+        agent:
+          type: string  
+          default: "demo-bot"
+        scope:
+          type: string
+          default: "pay:merchant"
+        limit:
+          type: object
+          properties:
+            amount:
+              type: number
+              default: 1000
+            currency:
+              type: string
+              default: "USD"
+        aud:
+          type: string
+          default: "merchant.example"
+        exp:
+          type: integer
+          description: Custom expiration (optional)
+          
+    DemoTokenResponse:
+      type: object
+      required: [token, payload]
+      properties:
+        token:
+          type: string
+          description: Generated JWS token
+        payload:
+          $ref: '#/components/schemas/AgentOAuthPayload'
+        kid:
+          type: string
+          description: Key ID used for signing
+          
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: Error message
+        code:
+          type: string
+          description: Error code
+        details:
+          type: object
+          description: Additional error details
+
+  securitySchemes: {}
+
+security: []
+
+tags:
+  - name: Verification
+    description: Token verification endpoints
+  - name: Management  
+    description: Token management (revocation)
+  - name: Metadata
+    description: Service metadata and health
+  - name: Development
+    description: Development and testing endpoints

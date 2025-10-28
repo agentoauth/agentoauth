@@ -5,6 +5,27 @@ All notable changes to the AgentOAuth protocol will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-10-28
+
+### Added
+- Formal OpenAPI 3.0 specification for all endpoints (`packages/spec/openapi.yaml`)
+- Comprehensive conformance test suite (`@agentoauth/conformance`)
+- Cross-language test vectors for JSON canonicalization
+- Automated badge generation for conformance results
+- CLI commands: `test:conformance`, `test:conformance:remote`
+- 23+ test fixtures covering all error scenarios
+- JSON canonicalization validation for cross-language implementations
+- Detailed conformance reporting with CONFORMANCE.md generation
+
+### Changed
+- API specification formalized in OpenAPI 3.0 format
+- Conformance testing integrated into development workflow
+
+### Documentation
+- Added comprehensive conformance testing documentation
+- OpenAPI spec available for integration testing
+- Test vector documentation for cross-language compatibility
+
 ## [0.2.0] - 2025-10-21
 
 ### Added

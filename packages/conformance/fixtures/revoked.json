@@ -1,0 +1,36 @@
+{
+  "description": "Tokens that should be revoked during test execution",
+  "tests": [
+    {
+      "name": "basic-revoke-test",
+      "description": "Valid token that gets revoked and should fail subsequent verification",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJyZXZva2UtdGVzdC0xMjM0LTU2NzgiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6YWxpY2UiLCJhZ2VudCI6InJldm9rZS10ZXN0LWFnZW50Iiwic2NvcGUiOiJwYXk6bWVyY2hhbnQiLCJsaW1pdCI6eyJhbW91bnQiOjEwMDAsImN1cnJlbmN5IjoiVVNEIn0sImV4cCI6MjE0NzQ4MzY0Nywibm9uY2UiOiJyZXZva2UtdGVzdC1ub25jZSJ9.MOCK_SIGNATURE_PLACEHOLDER",
+      "jti": "revoke-test-1234-5678",
+      "expectedResult": {
+        "valid": false,
+        "code": "REVOKED"
+      }
+    },
+    {
+      "name": "revoke-with-audience",
+      "description": "Token with audience that gets revoked",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJyZXZva2UtYXVkLXRlc3QtOTk5OSIsInVzZXIiOiJkaWQ6ZXhhbXBsZTpib2IiLCJhZ2VudCI6InJldm9rZS1hdWQtYWdlbnQiLCJzY29wZSI6InJlYWQ6ZGF0YSIsImxpbWl0Ijp7ImFtb3VudCI6NTAwLCJjdXJyZW5jeSI6IkVVUiJ9LCJhdWQiOiJ0ZXN0LW1lcmNoYW50LmV4YW1wbGUiLCJleHAiOjIxNDc0ODM2NDcsIm5vbmNlIjoicmV2b2tlLWF1ZC10ZXN0LW5vbmNlIn0.MOCK_SIGNATURE_PLACEHOLDER",
+      "jti": "revoke-aud-test-9999",
+      "audience": "test-merchant.example",
+      "expectedResult": {
+        "valid": false,
+        "code": "REVOKED"
+      }
+    },
+    {
+      "name": "revoke-high-value-token",
+      "description": "High-value token that gets revoked (security test)",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJoaWdoLXZhbHVlLXJldm9rZS10ZXN0IiwidXNlciI6ImRpZDpleGFtcGxlOndoYWxlIiwiYWdlbnQiOiJoaWdoLXZhbHVlLWFnZW50Iiwic2NvcGUiOiJwYXk6bWVyY2hhbnQud2hpdGVsaXN0IiwibGltaXQiOnsiYW1vdW50IjoxMDAwMDAwMCwiY3VycmVuY3kiOiJVU0QifSwiZXhwIjoyMTQ3NDgzNjQ3LCJub25jZSI6ImhpZ2gtdmFsdWUtcmV2b2tlLW5vbmNlIn0.MOCK_SIGNATURE_PLACEHOLDER",
+      "jti": "high-value-revoke-test",
+      "expectedResult": {
+        "valid": false,
+        "code": "REVOKED"
+      }
+    }
+  ]
+}

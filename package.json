@@ -1,6 +1,6 @@
 {
   "name": "agentoauth",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "private": true,
   "description": "A neutral protocol for AI agent authorization",
   "scripts": {
@@ -12,7 +12,9 @@
     "test": "pnpm -r run test",
     "demo": "pnpm install && pnpm run build && cd packages/demo-agent-to-merchant && bash demo.sh",
     "demo:merchant": "cd packages/demo-agent-to-merchant && node merchant.js",
-    "demo:agent": "cd packages/demo-agent-to-merchant && node agent.js"
+    "demo:agent": "cd packages/demo-agent-to-merchant && node agent.js",
+    "test:conformance": "cd packages/conformance && pnpm build && pnpm test:local",
+    "test:conformance:remote": "cd packages/conformance && pnpm build && pnpm test:remote"
   },
   "keywords": ["oauth", "agent", "authorization", "jwt", "jws"],
   "author": "",

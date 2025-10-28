@@ -1,0 +1,60 @@
+{
+  "description": "Valid AgentOAuth tokens that should pass verification",
+  "tests": [
+    {
+      "name": "basic-valid-token",
+      "description": "Basic valid v0.2 token with all required fields",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiI1NTBlODQwMC1lMjliLTQxZDQtYTcxNi00NDY2NTU0NDAwMDAiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6YWxpY2UiLCJhZ2VudCI6InRlc3QtYWdlbnQiLCJzY29wZSI6InBheTptZXJjaGFudCIsImxpbWl0Ijp7ImFtb3VudCI6MTAwMCwiY3VycmVuY3kiOiJVU0QifSwiZXhwIjoyMTQ3NDgzNjQ3LCJub25jZSI6InRlc3Qtbm9uY2UtMTIzNDU2NzgifQ.MOCK_SIGNATURE_PLACEHOLDER", 
+      "expectedResult": {
+        "valid": true,
+        "payload": {
+          "ver": "0.2",
+          "jti": "550e8400-e29b-41d4-a716-446655440000",
+          "user": "did:example:alice",
+          "agent": "test-agent",
+          "scope": "pay:merchant",
+          "limit": {"amount": 1000, "currency": "USD"},
+          "exp": 2147483647,
+          "nonce": "test-nonce-12345678"
+        }
+      }
+    },
+    {
+      "name": "with-audience",
+      "description": "Valid token with audience field",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJhdWQtdGVzdC0xMjM0LTU2NzgiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6Ym9iIiwiYWdlbnQiOiJhdWRpZW5jZS1hZ2VudCIsInNjb3BlIjoicmVhZDpkYXRhIiwibGltaXQiOnsiYW1vdW50Ijo1MDAsImN1cnJlbmN5IjoiRVVSIn0sImF1ZCI6Im1lcmNoYW50LmV4YW1wbGUiLCJleHAiOjIxNDc0ODM2NDcsIm5vbmNlIjoiYXVkLXRlc3Qtbm9uY2UifQ.MOCK_SIGNATURE_PLACEHOLDER",
+      "audience": "merchant.example",
+      "expectedResult": {
+        "valid": true
+      }
+    },
+    {
+      "name": "v01-token-legacy",
+      "description": "Valid v0.1 token (legacy support)",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjEiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6Y2Fyb2wiLCJhZ2VudCI6ImxlZ2FjeS1hZ2VudCIsInNjb3BlIjoicGF5Om1lcmNoYW50IiwibGltaXQiOnsiYW1vdW50IjoyMDAsImN1cnJlbmN5IjoiR0JQIn0sImV4cCI6MjE0NzQ4MzY0Nywibm9uY2UiOiJsZWdhY3ktbm9uY2UtOTk5In0.MOCK_SIGNATURE_PLACEHOLDER",
+      "expectedResult": {
+        "valid": true,
+        "payload": {
+          "ver": "0.1",
+          "user": "did:example:carol"
+        }
+      }
+    },
+    {
+      "name": "minimal-valid-scope",
+      "description": "Token with minimal valid scope format",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJtaW5pbWFsLXNjb3BlLXRlc3QiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6ZGF2ZSIsImFnZW50IjoibWluaW1hbC1hZ2VudCIsInNjb3BlIjoieCIsImxpbWl0Ijp7ImFtb3VudCI6MSwiY3VycmVuY3kiOiJVU0QifSwiZXhwIjoyMTQ3NDgzNjQ3LCJub25jZSI6Im1pbmltYWwtbm9uY2UtMTIzNDU2NzgifQ.MOCK_SIGNATURE_PLACEHOLDER",
+      "expectedResult": {
+        "valid": true
+      }
+    },
+    {
+      "name": "complex-scope-format", 
+      "description": "Token with complex scope containing allowed special characters",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJjb21wbGV4LXNjb3BlLXRlc3QiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6ZXZlIiwiYWdlbnQiOiJjb21wbGV4LWFnZW50Iiwic2NvcGUiOiJwYXk6bWVyY2hhbnQud2FsbGV0LnRyYW5zZmVyX2FkbWluIiwibGltaXQiOnsiYW1vdW50Ijo5OTk5OTk5LCJjdXJyZW5jeSI6IlVTRCJ9LCJleHAiOjIxNDc0ODM2NDcsIm5vbmNlIjoiY29tcGxleC1ub25jZS1hYmNkZWYxMjM0NTYifQ.MOCK_SIGNATURE_PLACEHOLDER",
+      "expectedResult": {
+        "valid": true
+      }
+    }
+  ]
+}

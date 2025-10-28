@@ -2,9 +2,9 @@
 
 A neutral protocol for AI agents to prove who authorized what. AgentOAuth provides verifiable authorization tokens with clear scope, limits, and expiration—built on OAuth/JWT patterns for maximum interoperability.
 
-**Status**: ✅ v0.2 Complete | 📦 19 Unit Tests Passing | 🔐 Production Ready
+**Status**: ✅ v0.4 Complete | 📦 19 Unit Tests + 23 Conformance Tests Passing | 🔐 Production Ready
 
-**Latest v0.2**: Token revocation (jti), anti-replay protection, examples package, Postman collection, enhanced playground with copy buttons
+**Latest v0.4**: Formal OpenAPI specification, comprehensive conformance testing, cross-language test vectors, automated badge generation
 
 ## 🚀 5-Minute Quickstart
 
@@ -162,14 +162,15 @@ See [SUPER_SIMPLE_START.md](SUPER_SIMPLE_START.md) or [ONE_COMMAND_SETUP.md](ONE
 ## Resources
 
 - 📖 [Specification](packages/spec/SPEC.md) — Complete protocol documentation (v0.2)
+- 📋 [OpenAPI Spec](packages/spec/openapi.yaml) — Formal API specification (v0.4)
 - 🔧 [JavaScript SDK](packages/sdk-js) — Node.js and browser support (19 tests)
 - 🎮 [Playground](packages/playground) — Interactive validator with copy buttons & samples
 - 🔐 [Verifier API](packages/verifier-api) — Reference implementation with revocation
+- 🧪 [Conformance Tests](packages/conformance) — 23+ test cases & cross-language vectors
 - 🎬 [Agent→Merchant Demo](packages/demo-agent-to-merchant) — End-to-end payment flow
 - 💡 [Examples](packages/examples) — issue-token.js, verify-token.js scripts
 - 📮 [Postman Collection](postman/) — API testing collection
 - 📝 [Changelog](CHANGELOG.md) — Version history
-- 🎉 [v0.2 Release Notes](V0.2_RELEASE_NOTES.md) — What's new
 
 ## Architecture
 

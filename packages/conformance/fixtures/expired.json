@@ -1,0 +1,41 @@
+{
+  "description": "Tokens past their expiration time that should fail",
+  "tests": [
+    {
+      "name": "clearly-expired-token",
+      "description": "Token expired 1 hour ago",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJleHBpcmVkLXRlc3QiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6YWxpY2UiLCJhZ2VudCI6ImV4cGlyZWQtYWdlbnQiLCJzY29wZSI6InBheTptZXJjaGFudCIsImxpbWl0Ijp7ImFtb3VudCI6MTAwMCwiY3VycmVuY3kiOiJVU0QifSwiZXhwIjoxNjQwOTk1MjAwLCJub25jZSI6ImV4cGlyZWQtdGVzdC1ub25jZSJ9.MOCK_SIGNATURE_PLACEHOLDER",
+      "expectedResult": {
+        "valid": false,
+        "code": "EXPIRED"
+      }
+    },
+    {
+      "name": "epoch-zero-expired",
+      "description": "Token expired at Unix epoch (1970)",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJlcG9jaC1leHBpcmVkLXRlc3QiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6Ym9iIiwiYWdlbnQiOiJlcG9jaC1hZ2VudCIsInNjb3BlIjoicmVhZDpkYXRhIiwibGltaXQiOnsiYW1vdW50Ijo1MDAsImN1cnJlbmN5IjoiRVVSIn0sImV4cCI6MCwibm9uY2UiOiJlcG9jaC1leHBpcmVkLW5vbmNlIn0.MOCK_SIGNATURE_PLACEHOLDER",
+      "expectedResult": {
+        "valid": false,
+        "code": "EXPIRED"
+      }
+    },
+    {
+      "name": "recently-expired",
+      "description": "Token expired just moments ago (tests clock skew)",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJyZWNlbnQtZXhwaXJlZC10ZXN0IiwidXNlciI6ImRpZDpleGFtcGxlOmNhcm9sIiwiYWdlbnQiOiJyZWNlbnQtZXhwaXJlZC1hZ2VudCIsInNjb3BlIjoicGF5Om1lcmNoYW50IiwibGltaXQiOnsiYW1vdW50Ijo3NTAsImN1cnJlbmN5IjoiR0JQIn0sImV4cCI6MTcyOTUwMDAwMCwibm9uY2UiOiJyZWNlbnQtZXhwaXJlZC1ub25jZSJ9.MOCK_SIGNATURE_PLACEHOLDER",
+      "expectedResult": {
+        "valid": false,
+        "code": "EXPIRED"
+      }
+    },
+    {
+      "name": "v01-expired-token",
+      "description": "Expired v0.1 token (legacy)",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjEiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6ZGF2ZSIsImFnZW50IjoibGVnYWN5LWV4cGlyZWQtYWdlbnQiLCJzY29wZSI6InJlYWQ6ZGF0YSIsImxpbWl0Ijp7ImFtb3VudCI6MjAwLCJjdXJyZW5jeSI6IlVTRCJ9LCJleHAiOjE2NDA5OTUyMDAsIm5vbmNlIjoibGVnYWN5LWV4cGlyZWQtbm9uY2UifQ.MOCK_SIGNATURE_PLACEHOLDER",
+      "expectedResult": {
+        "valid": false,
+        "code": "EXPIRED"
+      }
+    }
+  ]
+}

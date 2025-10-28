@@ -1,0 +1,41 @@
+{
+  "description": "Tokens with invalid signatures that should fail",
+  "tests": [
+    {
+      "name": "tampered-payload",
+      "description": "Token with modified payload but original signature",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJ0YW1wZXJlZC10ZXN0IiwidXNlciI6ImRpZDpleGFtcGxlOmF0dGFja2VyIiwiYWdlbnQiOiJtYWxpY2lvdXMtYWdlbnQiLCJzY29wZSI6InBheTptZXJjaGFudCIsImxpbWl0Ijp7ImFtb3VudCI6OTk5OTk5OTk5LCJjdXJyZW5jeSI6IlVTRCJ9LCJleHAiOjIxNDc0ODM2NDcsIm5vbmNlIjoidGFtcGVyZWQtbm9uY2UifQ.ORIGINAL_SIGNATURE_WONT_MATCH",
+      "expectedResult": {
+        "valid": false,
+        "code": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "wrong-key-signature",
+      "description": "Token signed with different key",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6Indyb25nLWtleSIsInR5cCI6IkpXVCJ9.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJ3cm9uZy1rZXktdGVzdCIsInVzZXIiOiJkaWQ6ZXhhbXBsZTphbGljZSIsImFnZW50IjoidGVzdC1hZ2VudCIsInNjb3BlIjoicGF5Om1lcmNoYW50IiwibGltaXQiOnsiYW1vdW50IjoxMDAwLCJjdXJyZW5jeSI6IlVTRCJ9LCJleHAiOjIxNDc0ODM2NDcsIm5vbmNlIjoid3Jvbmcta2V5LW5vbmNlIn0.SIGNATURE_FROM_DIFFERENT_KEY", 
+      "expectedResult": {
+        "valid": false,
+        "code": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "corrupted-signature",
+      "description": "Token with corrupted signature bytes",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJjb3JydXB0ZWQtc2lnLXRlc3QiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6YWxpY2UiLCJhZ2VudCI6InRlc3QtYWdlbnQiLCJzY29wZSI6InBheTptZXJjaGFudCIsImxpbWl0Ijp7ImFtb3VudCI6MTAwMCwiY3VycmVuY3kiOiJVU0QifSwiZXhwIjoyMTQ3NDgzNjQ3LCJub25jZSI6ImNvcnJ1cHRlZC1zaWctbm9uY2UifQ.XXXCorruptedSignatureXXX",
+      "expectedResult": {
+        "valid": false,
+        "code": "INVALID_SIGNATURE"
+      }
+    },
+    {
+      "name": "missing-signature",
+      "description": "Token with missing signature part",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJtaXNzaW5nLXNpZy10ZXN0IiwidXNlciI6ImRpZDpleGFtcGxlOmFsaWNlIiwiYWdlbnQiOiJ0ZXN0LWFnZW50Iiwic2NvcGUiOiJwYXk6bWVyY2hhbnQiLCJsaW1pdCI6eyJhbW91bnQiOjEwMDAsImN1cnJlbmN5IjoiVVNEIn0sImV4cCI6MjE0NzQ4MzY0Nywibm9uY2UiOiJtaXNzaW5nLXNpZy1ub25jZSJ9.",
+      "expectedResult": {
+        "valid": false,
+        "code": "INVALID_SIGNATURE"
+      }
+    }
+  ]
+}

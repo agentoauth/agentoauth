@@ -1,0 +1,42 @@
+{
+  "description": "Tokens to test replay attack detection (second use should fail)",
+  "tests": [
+    {
+      "name": "basic-replay-test",
+      "description": "Valid token that should fail on second use (replay attack)",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJyZXBsYXktdGVzdC1hYmNkLWVmZ2giLCJ1c2VyIjoiZGlkOmV4YW1wbGU6YWxpY2UiLCJhZ2VudCI6InJlcGxheS10ZXN0LWFnZW50Iiwic2NvcGUiOiJwYXk6bWVyY2hhbnQiLCJsaW1pdCI6eyJhbW91bnQiOjEwMDAsImN1cnJlbmN5IjoiVVNEIn0sImV4cCI6MjE0NzQ4MzY0Nywibm9uY2UiOiJyZXBsYXktdGVzdC1ub25jZSJ9.MOCK_SIGNATURE_PLACEHOLDER",
+      "expectedResult": {
+        "valid": false,
+        "code": "REPLAY"
+      }
+    },
+    {
+      "name": "replay-with-audience",
+      "description": "Token with audience that should fail on replay",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJyZXBsYXktYXVkLXRlc3QtMTExMSIsInVzZXIiOiJkaWQ6ZXhhbXBsZTpib2IiLCJhZ2VudCI6InJlcGxheS1hdWQtYWdlbnQiLCJzY29wZSI6InJlYWQ6ZGF0YSIsImxpbWl0Ijp7ImFtb3VudCI6NzUwLCJjdXJyZW5jeSI6IkdCUCJ9LCJhdWQiOiJ0ZXN0LWF1ZGllbmNlLmV4YW1wbGUiLCJleHAiOjIxNDc0ODM2NDcsIm5vbmNlIjoicmVwbGF5LWF1ZC10ZXN0LW5vbmNlIn0.MOCK_SIGNATURE_PLACEHOLDER",
+      "audience": "test-audience.example",
+      "expectedResult": {
+        "valid": false,
+        "code": "REPLAY"
+      }
+    },
+    {
+      "name": "replay-payment-token",
+      "description": "Payment token replay attempt (financial security test)",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJwYXltZW50LXJlcGxheS10ZXN0IiwidXNlciI6ImRpZDpleGFtcGxlOnBheWVyIiwiYWdlbnQiOiJwYXltZW50LXJlcGxheS1hZ2VudCIsInNjb3BlIjoicGF5Om1lcmNoYW50LmNyaXRpY2FsIiwibGltaXQiOnsiYW1vdW50Ijo1MDAwLCJjdXJyZW5jeSI6IlVTRCJ9LCJleHAiOjIxNDc0ODM2NDcsIm5vbmNlIjoicGF5bWVudC1yZXBsYXktbm9uY2UifQ.MOCK_SIGNATURE_PLACEHOLDER",
+      "expectedResult": {
+        "valid": false,
+        "code": "REPLAY"
+      }
+    },
+    {
+      "name": "unique-nonce-replay",
+      "description": "Token with unique nonce that should still fail on replay (jti-based protection)",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJ1bmlxdWUtbm9uY2UtcmVwbGF5LXRlc3QiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6Y2Fyb2wiLCJhZ2VudCI6InVuaXF1ZS1ub25jZS1hZ2VudCIsInNjb3BlIjoicmVhZDpkYXRhIiwibGltaXQiOnsiYW1vdW50IjoyNTAsImN1cnJlbmN5IjoiRVVSIn0sImV4cCI6MjE0NzQ4MzY0Nywibm9uY2UiOiJ2ZXJ5LXVuaXF1ZS1ub25jZS0xMjM0NTY3ODkwYWJjZGVmIn0.MOCK_SIGNATURE_PLACEHOLDER",
+      "expectedResult": {
+        "valid": false,
+        "code": "REPLAY"
+      }
+    }
+  ]
+}

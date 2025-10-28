@@ -1,0 +1,30 @@
+{
+  "name": "@agentoauth/conformance",
+  "version": "0.4.0",
+  "description": "Conformance test suite for AgentOAuth implementations",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo 'Conformance tests require a running verifier-api. Use test:local or test:remote.'",
+    "test:local": "BASE_URL=http://localhost:3000 node dist/runner.js",
+    "test:remote": "node dist/runner.js",
+    "build": "tsc",
+    "lint": "echo 'No linting for conformance'",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@agentoauth/sdk": "workspace:*",
+    "jose": "^5.2.0",
+    "chalk": "^5.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  },
+  "files": [
+    "dist",
+    "fixtures"
+  ],
+  "keywords": ["agentoauth", "conformance", "testing", "jwt", "oauth"],
+  "author": "",
+  "license": "MIT AND Apache-2.0"
+}

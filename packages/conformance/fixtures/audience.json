@@ -1,0 +1,45 @@
+{
+  "description": "Tokens with audience mismatch scenarios",
+  "tests": [
+    {
+      "name": "audience-mismatch",
+      "description": "Token with different audience than expected",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJhdWRpZW5jZS1taXNtYXRjaC10ZXN0IiwidXNlciI6ImRpZDpleGFtcGxlOmFsaWNlIiwiYWdlbnQiOiJhdWRpZW5jZS1hZ2VudCIsInNjb3BlIjoicGF5Om1lcmNoYW50IiwibGltaXQiOnsiYW1vdW50IjoxMDAwLCJjdXJyZW5jeSI6IlVTRCJ9LCJhdWQiOiJtZXJjaGFudC1hLmV4YW1wbGUiLCJleHAiOjIxNDc0ODM2NDcsIm5vbmNlIjoiYXVkaWVuY2UtbWlzbWF0Y2gtbm9uY2UifQ.MOCK_SIGNATURE_PLACEHOLDER",
+      "audience": "merchant-b.example",
+      "expectedResult": {
+        "valid": false,
+        "code": "INVALID_AUDIENCE"
+      }
+    },
+    {
+      "name": "missing-audience-field",
+      "description": "Token without audience field when one is expected",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJtaXNzaW5nLWF1ZGllbmNlLXRlc3QiLCJ1c2VyIjoiZGlkOmV4YW1wbGU6Ym9iIiwiYWdlbnQiOiJuby1hdWRpZW5jZS1hZ2VudCIsInNjb3BlIjoicGF5Om1lcmNoYW50IiwibGltaXQiOnsiYW1vdW50Ijo1MDAsImN1cnJlbmN5IjoiRVVSIn0sImV4cCI6MjE0NzQ4MzY0Nywibm9uY2UiOiJtaXNzaW5nLWF1ZGllbmNlLW5vbmNlIn0.MOCK_SIGNATURE_PLACEHOLDER",
+      "audience": "required-audience.example", 
+      "expectedResult": {
+        "valid": false,
+        "code": "INVALID_AUDIENCE"
+      }
+    },
+    {
+      "name": "empty-audience-field",
+      "description": "Token with empty audience when non-empty expected",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJlbXB0eS1hdWRpZW5jZS10ZXN0IiwidXNlciI6ImRpZDpleGFtcGxlOmNhcm9sIiwiYWdlbnQiOiJlbXB0eS1hdWQtYWdlbnQiLCJzY29wZSI6InJlYWQ6ZGF0YSIsImxpbWl0Ijp7ImFtb3VudCI6NzUwLCJjdXJyZW5jeSI6IkdCUCJ9LCJhdWQiOiIiLCJleHAiOjIxNDc0ODM2NDcsIm5vbmNlIjoiZW1wdHktYXVkaWVuY2Utbm9uY2UifQ.MOCK_SIGNATURE_PLACEHOLDER",
+      "audience": "expected-audience.example",
+      "expectedResult": {
+        "valid": false,
+        "code": "INVALID_AUDIENCE"
+      }
+    },
+    {
+      "name": "case-sensitive-audience",
+      "description": "Token with different case audience (case sensitivity test)",
+      "token": "eyJhbGciOiJFZERTQSIsImtpZCI6ImNvbmZvcm1hbmNlLXRlc3Qta2V5IiwidHlwIjoiSldUIn0.eyJ2ZXIiOiIwLjIiLCJqdGkiOiJjYXNlLXNlbnNpdGl2ZS1hdWQtdGVzdCIsInVzZXIiOiJkaWQ6ZXhhbXBsZTpkYXZlIiwiYWdlbnQiOiJjYXNlLXNlbnNpdGl2ZS1hZ2VudCIsInNjb3BlIjoicGF5Om1lcmNoYW50IiwibGltaXQiOnsiYW1vdW50IjoyMDAwLCJjdXJyZW5jeSI6IlVTRCJ9LCJhdWQiOiJNRVJDSEFOVC5FWEFNUExFIiwiZXhwIjoyMTQ3NDgzNjQ3LCJub25jZSI6ImNhc2Utc2Vuc2l0aXZlLWF1ZC1ub25jZSJ9.MOCK_SIGNATURE_PLACEHOLDER",
+      "audience": "merchant.example",
+      "expectedResult": {
+        "valid": false,
+        "code": "INVALID_AUDIENCE"
+      }
+    }
+  ]
+}
