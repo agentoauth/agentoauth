@@ -39,3 +39,6 @@ lerna-debug.log*
 *.pem
 .cache
 
+
+# pnpm store (should never be committed)
+.pnpm-store/
