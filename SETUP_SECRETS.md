@@ -33,7 +33,9 @@ After setting both secrets, test the endpoints:
 # Test health (should still work)
 curl https://verifier.agentoauth.org/health
 
-# Test verify with your demo API key (should work after secrets are set)
+# Test verify with demo API key (⚠️ DEMO KEY ONLY - For testing purposes)
+# This is a demo/test key for "demo-org-001" with free tier quotas
+# For production use, generate your own API key
 curl -X POST https://verifier.agentoauth.org/verify \
   -H "Content-Type: application/json" \
   -H "X-API-Key: ak_eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJkZW1vLW9yZy0wMDEiLCJuYW1lIjoiRGVtbyBPcmdhbml6YXRpb24iLCJ0aWVyIjoiZnJlZSIsInF1b3RhcyI6eyJkYWlseSI6MTAwMCwibW9udGhseSI6MTAwMDB9LCJpc3MiOiJhZ2VudG9hdXRoLm9yZyIsImV4cCI6MTc5MzIxNTI5NCwiaWF0IjoxNzYxNjc5Mjk0fQ.yEmUn7k5yurX2XR0Tu7PbPcbhJW5NHWW32hQNJjUTCr8hiLrQe-LKGd6o3bp0yo21duE8d3hFoXvz5j6Jx6fCg" \
@@ -53,6 +55,7 @@ Once the secrets are set and the verify endpoint works, test with your demo:
 cd ../..
 
 # Set environment variables for hosted verifier
+# ⚠️ Using demo API key - Replace with your production key for real use
 export USE_HOSTED_VERIFIER=true
 export AGENTOAUTH_API_KEY="ak_eyJhbGciOiJFZERTQSJ9.eyJzdWIiOiJkZW1vLW9yZy0wMDEiLCJuYW1lIjoiRGVtbyBPcmdhbml6YXRpb24iLCJ0aWVyIjoiZnJlZSIsInF1b3RhcyI6eyJkYWlseSI6MTAwMCwibW9udGhseSI6MTAwMDB9LCJpc3MiOiJhZ2VudG9hdXRoLm9yZyIsImV4cCI6MTc5MzIxNTI5NCwiaWF0IjoxNzYxNjc5Mjk0fQ.yEmUn7k5yurX2XR0Tu7PbPcbhJW5NHWW32hQNJjUTCr8hiLrQe-LKGd6o3bp0yo21duE8d3hFoXvz5j6Jx6fCg"
 
