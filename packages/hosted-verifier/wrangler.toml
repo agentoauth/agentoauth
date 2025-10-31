@@ -7,6 +7,21 @@ compatibility_flags = ["nodejs_compat"]
 [env.development]
 name = "agentoauth-verifier-dev"
 
+# KV namespace for development (create with: wrangler kv:namespace create "RATE_LIMIT_KV")
+[[env.development.kv_namespaces]]
+binding = "RATE_LIMIT_KV" 
+id = "9e574bf949bd435da4b95cf8dd3471ca"  # Preview KV namespace ID
+
+# Durable Objects for development
+[env.development.durable_objects]
+bindings = [
+  { name = "POLICY_STATE", class_name = "PolicyState", script_name = "agentoauth-verifier" }
+]
+
+[[env.development.migrations]]
+tag = "v1"
+new_classes = ["PolicyState"]
+
 # Production environment
 [env.production]
 name = "agentoauth-verifier-prod"
@@ -28,6 +43,17 @@ preview_id = "9e574bf949bd435da4b95cf8dd3471ca"  # Replace with actual preview K
 binding = "AUDIT_LOGS_R2"
 bucket_name = "agentoauth-audit-logs"
 
+# Durable Objects
+[env.production.durable_objects]
+bindings = [
+  { name = "POLICY_STATE", class_name = "PolicyState", script_name = "agentoauth-verifier" }
+]
+
+# Durable Object migrations
+[[env.production.migrations]]
+tag = "v1"
+new_classes = ["PolicyState"]
+
 # Environment variables
 [env.production.vars]
 ENVIRONMENT = "production"
@@ -35,7 +61,11 @@ ENVIRONMENT = "production"
 # Secrets to set with wrangler secret put:
 # - API_KEY_PUBLIC_KEY: JSON string of the EdDSA public key for API key verification
 # - AUDIT_SALT: Random string for hashing PII in audit logs
+# - SIGNING_PRIVATE_KEY: JWK for signing receipts
+# - SIGNING_KID: Key ID for receipt signing
 
 # Example commands to set secrets:
 # wrangler secret put API_KEY_PUBLIC_KEY --env production
 # wrangler secret put AUDIT_SALT --env production
+# wrangler secret put SIGNING_PRIVATE_KEY --env production
+# wrangler secret put SIGNING_KID --env production

@@ -7,12 +7,19 @@ import { verifyApiKey, loadApiKeyPublicKey } from './auth.js';
 import { RateLimiter } from './rate-limit.js';
 import { AuditLogger } from './audit.js';
 import { loadPublicKeys } from './keys.js';
+// Policy evaluation imports
+import { evaluatePolicyStateless, hashPolicy, canonicalizePolicy } from './policy/index.js';
+import { signReceipt, createReceiptId } from './policy/receipts.js';
+import { PolicyState } from './policy-state.js';
 
 interface Env {
   RATE_LIMIT_KV: KVNamespace;
   AUDIT_LOGS_R2?: R2Bucket;
   API_KEY_PUBLIC_KEY: string;
   AUDIT_SALT: string;
+  POLICY_STATE: DurableObjectNamespace<PolicyState>;
+  SIGNING_PRIVATE_KEY: string;
+  SIGNING_KID: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -27,18 +34,22 @@ app.use('*', cors({
 // Health check
 app.get('/health', (c) => {
   return c.json({
-    status: 'online',
-    service: 'agentoauth-hosted-verifier',
-    version: '0.6.0-alpha',
-    timestamp: new Date().toISOString(),
+    status: 'ok',
+    service: 'agentoauth-verifier',
+    version: '0.7.0',
+    build: '2025-10-31',
+    features: ['act.v0.2', 'policy-eval', 'stateful-budgets', 'receipts'],
     endpoints: {
       verify: 'POST /verify',
+      simulate: 'POST /simulate',
+      revoke: 'POST /revoke',
+      receipts: 'GET /receipts/:id',
+      lint_policy: 'POST /lint/policy',
+      lint_token: 'POST /lint/token',
       jwks: 'GET /.well-known/jwks.json',
       usage: 'GET /usage',
       terms: 'GET /terms'
-    },
-    verification: 'Structural validation only - Full signature verification in beta',
-    notice: 'Alpha service - No SLA - Development use only'
+    }
   });
 });
 
@@ -225,13 +236,13 @@ app.post('/verify', async (c) => {
             suggestion: 'Check the audience field in your token matches the expected value'
           }
         };
-      } else if (!payload.ver || (payload.ver !== '0.1' && payload.ver !== '0.2')) {
+      } else if (!payload.ver || (payload.ver !== '0.1' && payload.ver !== '0.2' && payload.ver !== 'act.v0.2')) {
         verificationResult = {
           valid: false,
           error: { 
             message: `Unsupported token version: ${payload.ver}`, 
             code: 'UNSUPPORTED_VERSION',
-            suggestion: 'Use a supported AgentOAuth token version (0.1 or 0.2)'
+            suggestion: 'Use a supported AgentOAuth token version (0.1, 0.2, or act.v0.2)'
           }
         };
       } else {
@@ -260,7 +271,147 @@ app.post('/verify', async (c) => {
     // Store token payload for audit logging
     tokenPayload = verificationResult.valid ? verificationResult.payload : undefined;
     
-    // 7. Return result
+    // 7. Policy evaluation (act.v0.2)
+    if (verificationResult.valid && verificationResult.payload?.policy && verificationResult.payload?.policy_hash) {
+      try {
+        // Verify policy hash
+        const computedHash = await hashPolicy(verificationResult.payload.policy);
+        if (computedHash !== verificationResult.payload.policy_hash) {
+          return c.json({
+            decision: 'DENY',
+            error: 'Policy hash verification failed',
+            code: 'POLICY_HASH_MISMATCH'
+          }, 400);
+        }
+        
+        // Check revocation (KV lookup)
+        if (verificationResult.payload.jti) {
+          const revokedToken = await c.env.RATE_LIMIT_KV.get(`rev:jti:${verificationResult.payload.jti}`);
+          if (revokedToken) {
+            return c.json({
+              decision: 'DENY',
+              error: 'Token has been revoked',
+              code: 'REVOKED'
+            }, 403);
+          }
+        }
+        if (verificationResult.payload.policy?.id) {
+          const revokedPolicy = await c.env.RATE_LIMIT_KV.get(`rev:pol:${verificationResult.payload.policy.id}`);
+          if (revokedPolicy) {
+            return c.json({
+              decision: 'DENY',
+              error: 'Policy has been revoked',
+              code: 'POLICY_REVOKED'
+            }, 403);
+          }
+        }
+        
+        // Stateless policy checks
+        const requestContext = {
+          action: body?.action || verificationResult.payload.scope,
+          resource: body?.resource ? {
+            type: body.resource.type,
+            id: body.resource.id
+          } : undefined,
+          amount: body?.amount,
+          currency: body?.currency,
+          timestamp: Math.floor(Date.now() / 1000)
+        };
+        
+        const statelessResult = evaluatePolicyStateless(verificationResult.payload.policy, requestContext);
+        if (!statelessResult.allowed) {
+          return c.json({
+            decision: 'DENY',
+            reason: statelessResult.reason
+          }, 403);
+        }
+        
+        // Stateful checks via Durable Object (for per-period budgets)
+        let doDecision = { allowed: true, remaining: undefined };
+        if (verificationResult.payload.policy.limits.per_period && requestContext.amount) {
+          try {
+            const doId = c.env.POLICY_STATE.idFromName(`${verificationResult.payload.iss || 'unknown'}:${verificationResult.payload.policy.id}`);
+            const doStub = c.env.POLICY_STATE.get(doId);
+            const doResponse = await doStub.fetch(new Request('https://do/apply', {
+              method: 'POST',
+              body: JSON.stringify({
+                method: 'apply',
+                body: {
+                  policy: verificationResult.payload.policy,
+                  context: requestContext,
+                  jti: verificationResult.payload.jti,
+                  idempotencyKey: body?.idempotency_key
+                }
+              })
+            }));
+            doDecision = await doResponse.json();
+            
+            if (!doDecision.allowed) {
+              return c.json({
+                decision: 'DENY',
+                reason: doDecision.reason
+              }, 403);
+            }
+          } catch (doError) {
+            console.error('Durable Object error:', doError);
+            // If DO fails, conservatively deny
+            return c.json({
+              decision: 'DENY',
+              error: 'Service temporarily unavailable',
+              code: 'VERIFIER_UNAVAILABLE'
+            }, 503);
+          }
+        }
+        
+        // Sign receipt
+        let receiptId: string | undefined;
+        let receiptToken: string | undefined;
+        try {
+          receiptId = createReceiptId();
+          const privateKey = JSON.parse(c.env.SIGNING_PRIVATE_KEY);
+          receiptToken = await signReceipt({
+            id: receiptId,
+            policy_id: verificationResult.payload.policy.id,
+            decision: 'ALLOW',
+            timestamp: Math.floor(Date.now() / 1000),
+            remaining: doDecision.remaining
+          }, privateKey, c.env.SIGNING_KID);
+          
+          // Store receipt in KV (400 days TTL)
+          await c.env.RATE_LIMIT_KV.put(`rcpt:${receiptId}`, receiptToken, { 
+            expirationTtl: 400 * 86400 
+          });
+        } catch (receiptError) {
+          console.error('Receipt signing error:', receiptError);
+          // Don't fail verification if receipt fails
+        }
+        
+        // Return ALLOW decision
+        const response: any = {
+          decision: 'ALLOW',
+          policy_hash: verificationResult.payload.policy_hash,
+          timestamp: new Date().toISOString()
+        };
+        
+        if (receiptId) {
+          response.receipt_id = receiptId;
+          c.header('X-ACT-Receipt-Id', receiptId);
+        }
+        if (doDecision.remaining) {
+          response.remaining_budget = doDecision.remaining;
+        }
+        
+        return c.json(response);
+      } catch (error) {
+        console.error('Policy evaluation error:', error);
+        return c.json({
+          error: 'Policy evaluation failed',
+          code: 'POLICY_ERROR'
+        }, 500);
+      }
+    }
+    
+    // 8. Return result (legacy tokens without policy)
     if (verificationResult.valid) {
       statusCode = 200;
       return c.json({
@@ -311,6 +462,234 @@ app.post('/verify', async (c) => {
         console.error('Audit logging failed:', auditError);
       }
     }
+  }
+});
+
+// Simulate endpoint - same as verify but no state mutations
+app.post('/simulate', async (c) => {
+  const startTime = Date.now();
+  let statusCode = 200;
+  let errorCode: string | undefined;
+  
+  try {
+    // Similar to /verify but call DO with method='simulate'
+    const body = await c.req.json();
+    const { token } = body;
+    
+    if (!token) {
+      return c.json({
+        error: 'Token required',
+        code: 'MISSING_TOKEN'
+      }, 400);
+    }
+    
+    // Decode token
+    const { payload } = decode(token);
+    
+    // Policy evaluation (same as /verify)
+    if (payload?.policy && payload?.policy_hash) {
+      // Verify policy hash
+      const computedHash = await hashPolicy(payload.policy);
+      if (computedHash !== payload.policy_hash) {
+        return c.json({
+          decision: 'DENY',
+          error: 'Policy hash verification failed',
+          code: 'POLICY_HASH_MISMATCH'
+        }, 400);
+      }
+      
+      // Stateless checks
+      const requestContext = {
+        action: body?.action || payload.scope,
+        resource: body?.resource ? {
+          type: body.resource.type,
+          id: body.resource.id
+        } : undefined,
+        amount: body?.amount,
+        currency: body?.currency,
+        timestamp: Math.floor(Date.now() / 1000)
+      };
+      
+      const statelessResult = evaluatePolicyStateless(payload.policy, requestContext);
+      if (!statelessResult.allowed) {
+        return c.json({
+          decision: 'DENY',
+          reason: statelessResult.reason
+        }, 403);
+      }
+      
+      // Stateful checks via Durable Object (SIMULATE mode)
+      let doDecision = { allowed: true, remaining: undefined };
+      if (payload.policy.limits.per_period && requestContext.amount) {
+        try {
+          const doId = c.env.POLICY_STATE.idFromName(`${payload.iss || 'unknown'}:${payload.policy.id}`);
+          const doStub = c.env.POLICY_STATE.get(doId);
+          const doResponse = await doStub.fetch(new Request('https://do/simulate', {
+            method: 'POST',
+            body: JSON.stringify({
+              method: 'simulate',
+              body: {
+                policy: payload.policy,
+                context: requestContext
+              }
+            })
+          }));
+          doDecision = await doResponse.json();
+          
+          if (!doDecision.allowed) {
+            return c.json({
+              decision: 'DENY',
+              reason: doDecision.reason
+            }, 403);
+          }
+        } catch (doError) {
+          console.error('Durable Object error:', doError);
+          return c.json({
+            decision: 'DENY',
+            error: 'Service temporarily unavailable',
+            code: 'VERIFIER_UNAVAILABLE'
+          }, 503);
+        }
+      }
+      
+      // Return decision (NO receipt signing, NO storage mutations)
+      const response: any = {
+        decision: 'ALLOW',
+        policy_hash: payload.policy_hash,
+        timestamp: new Date().toISOString(),
+        simulation: true
+      };
+      
+      if (doDecision.remaining) {
+        response.remaining_budget = doDecision.remaining;
+      }
+      
+      return c.json(response);
+    }
+    
+    // Legacy tokens
+    return c.json({
+      decision: 'ALLOW',
+      simulation: true
+    });
+  } catch (error) {
+    console.error('Simulation error:', error);
+    return c.json({
+      error: 'Simulation failed',
+      code: 'SIMULATION_ERROR'
+    }, 500);
+  }
+});
+
+// Revoke endpoint
+app.post('/revoke', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { jti, policy_id } = body;
+    
+    if (!jti && !policy_id) {
+      return c.json({
+        error: 'jti or policy_id required',
+        code: 'MISSING_REVOCATION_ID'
+      }, 400);
+    }
+    
+    if (jti) {
+      // Store revocation (expires with token, assuming 1 year max)
+      await c.env.RATE_LIMIT_KV.put(`rev:jti:${jti}`, '1', { expirationTtl: 365 * 86400 });
+    }
+    
+    if (policy_id) {
+      // Store policy revocation (long TTL)
+      await c.env.RATE_LIMIT_KV.put(`rev:pol:${policy_id}`, '1', { expirationTtl: 365 * 86400 });
+    }
+    
+    return c.json({ revoked: true });
+  } catch (error) {
+    console.error('Revocation error:', error);
+    return c.json({
+      error: 'Revocation failed',
+      code: 'REVOCATION_ERROR'
+    }, 500);
+  }
+});
+
+// Receipts endpoint
+app.get('/receipts/:id', async (c) => {
+  try {
+    const receiptId = c.req.param('id');
+    const receipt = await c.env.RATE_LIMIT_KV.get(`rcpt:${receiptId}`);
+    
+    if (!receipt) {
+      return c.json({ error: 'Receipt not found' }, 404);
+    }
+    
+    return c.text(receipt, 200, {
+      'Content-Type': 'application/jwt'
+    });
+  } catch (error) {
+    console.error('Receipt retrieval error:', error);
+    return c.json({
+      error: 'Receipt retrieval failed',
+      code: 'RECEIPT_ERROR'
+    }, 500);
+  }
+});
+
+// Lint policy endpoint
+app.post('/lint/policy', async (c) => {
+  try {
+    const policy = await c.req.json();
+    
+    // Basic validation (can be enhanced with full schema validation)
+    if (!policy.version || !policy.actions || !policy.resources || !policy.limits) {
+      return c.json({
+        valid: false,
+        errors: ['Missing required fields: version, actions, resources, or limits']
+      }, 400);
+    }
+    
+    // Canonicalize and hash
+    const canonical = canonicalizePolicy(policy);
+    const hash = await hashPolicy(policy);
+    
+    return c.json({
+      valid: true,
+      policy_hash: hash,
+      canonical
+    });
+  } catch (error) {
+    console.error('Lint policy error:', error);
+    return c.json({
+      valid: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }, 400);
+  }
+});
+
+// Lint token endpoint
+app.post('/lint/token', async (c) => {
+  try {
+    const { token } = await c.req.json();
+    
+    if (!token) {
+      return c.json({
+        valid: false,
+        error: 'Token required'
+      }, 400);
+    }
+    
+    const { header, payload } = decode(token);
+    return c.json({
+      valid: true,
+      header,
+      payload
+    });
+  } catch (error) {
+    return c.json({
+      valid: false,
+      error: error instanceof Error ? error.message : 'Token parse failed'
+    }, 400);
   }
 });
 

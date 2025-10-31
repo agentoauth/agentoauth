@@ -47,4 +47,14 @@ jobs:
           pnpm test-e2e
         env:
           NODE_ENV: test
+      
+      - name: Run Cloudflare Workers E2E tests
+        run: |
+          cd packages/hosted-verifier
+          pnpm test
+        env:
+          NODE_ENV: test
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        continue-on-error: true  # Skip if wrangler not available in CI
 
