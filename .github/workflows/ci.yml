@@ -49,6 +49,7 @@ jobs:
           NODE_ENV: test
       
       - name: Run Cloudflare Workers E2E tests
+        timeout-minutes: 5
         run: |
           cd packages/hosted-verifier
           pnpm test

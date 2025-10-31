@@ -12,7 +12,8 @@ import { readFile } from 'fs/promises';
 
 // Test configuration
 const WORKER_URL = 'http://localhost:8787';
-const MAX_WAIT_MS = 60000; // 60 seconds max wait (longer for wrangler)
+const MAX_WAIT_MS = 30000; // 30 seconds max wait for wrangler startup
+const TEST_TIMEOUT_MS = 120000; // 2 minutes max for entire test suite
 const POLL_INTERVAL = 1000; // Check every 1s
 const TEST_API_KEY = 'ak_test_demo_key'; // Will need real key for full tests
 
@@ -95,9 +96,17 @@ async function startWrangler() {
 async function stopWrangler() {
   if (wranglerProcess) {
     console.log(chalk.blue('\n🛑 Stopping Wrangler...'));
-    wranglerProcess.kill();
+    // Try graceful shutdown first
+    wranglerProcess.kill('SIGTERM');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Force kill if still alive
+    if (wranglerProcess && wranglerProcess.killed === false) {
+      wranglerProcess.kill('SIGKILL');
+    }
+    
     wranglerProcess = null;
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 }
 
@@ -318,11 +327,29 @@ async function runTests() {
   if (results.failed > 0) {
     process.exit(1);
   }
+  
+  // Success - exit cleanly
+  process.exit(0);
 }
+
+// Set overall timeout for test suite
+const timeoutId = setTimeout(() => {
+  console.error(chalk.red('\n❌ Test suite timed out after 2 minutes'));
+  if (wranglerProcess) {
+    wranglerProcess.kill('SIGKILL');
+  }
+  process.exit(1);
+}, TEST_TIMEOUT_MS);
 
 // Run tests
 runTests().catch(error => {
+  clearTimeout(timeoutId);
   console.error(chalk.red('\nFatal error:'), error);
+  if (wranglerProcess) {
+    wranglerProcess.kill('SIGKILL');
+  }
   process.exit(1);
+}).finally(() => {
+  clearTimeout(timeoutId);
 });
 
