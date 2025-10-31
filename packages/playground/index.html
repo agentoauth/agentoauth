@@ -14,7 +14,14 @@
         </header>
 
         <main>
-            <section class="input-section">
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="validator">Token Validator</button>
+                <button class="tab-btn" data-tab="policy-builder">Policy Builder</button>
+                <button class="tab-btn" data-tab="policy-tester">Policy Tester</button>
+            </div>
+
+            <!-- Token Validator Tab -->
+            <section class="tab-content active input-section" data-content="validator">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
                     <label for="token-input">
                         <strong>Paste Token (JWS Compact Format)</strong>
@@ -56,6 +63,129 @@
                 <button id="verify-btn" class="btn-primary">Verify Token</button>
                 <button id="demo-btn" class="btn-secondary">Create Demo Token</button>
                 <button id="revoke-btn" class="btn-warning">Revoke Token</button>
+            </section>
+
+            <!-- Policy Builder Tab -->
+            <section class="tab-content input-section" data-content="policy-builder" style="display: none;">
+                <h2>Policy Builder (pol.v0.2)</h2>
+                <p style="margin-bottom: 1rem; color: #666;">Create structured authorization policies for programmable consent</p>
+                
+                <div class="policy-form">
+                    <div class="form-group">
+                        <label for="policy-id"><strong>Policy ID</strong></label>
+                        <input type="text" id="policy-id" placeholder="pol_01HXZ8K9P4QN2M1R3T5V7W9X" value="">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="policy-actions"><strong>Actions (comma-separated)</strong></label>
+                        <input type="text" id="policy-actions" placeholder="payments.send,payments.review" value="payments.send">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="policy-merchants"><strong>Merchants (comma-separated)</strong></label>
+                        <input type="text" id="policy-merchants" placeholder="airbnb,expedia,booking" value="">
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="policy-amount"><strong>Per-Transaction Limit</strong></label>
+                            <input type="number" id="policy-amount" placeholder="500" value="500">
+                        </div>
+                        <div class="form-group">
+                            <label for="policy-currency"><strong>Currency</strong></label>
+                            <input type="text" id="policy-currency" placeholder="USD" value="USD" maxlength="3">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="policy-period-amount"><strong>Weekly Budget</strong></label>
+                            <input type="number" id="policy-period-amount" placeholder="1500" value="1500">
+                        </div>
+                        <div class="form-group">
+                            <label for="policy-period"><strong>Period</strong></label>
+                            <select id="policy-period">
+                                <option value="week" selected>Week</option>
+                                <option value="day">Day</option>
+                                <option value="month">Month</option>
+                                <option value="hour">Hour</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><strong>Time Window (optional)</strong></label>
+                        <div class="form-row">
+                            <input type="text" id="policy-start" placeholder="08:00" value="">
+                            <span style="align-self: center;">to</span>
+                            <input type="text" id="policy-end" placeholder="20:00" value="">
+                            <input type="text" id="policy-tz" placeholder="America/Los_Angeles" value="">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><input type="checkbox" id="policy-strict"> <strong>Strict Mode</strong> (unknown fields = deny)</label>
+                    </div>
+                </div>
+                
+                <button id="build-policy-btn" class="btn-primary">Build Policy JSON</button>
+                <button id="create-token-btn" class="btn-secondary">Create Token with Policy</button>
+                
+                <div id="policy-output" class="output-section" style="display: none; margin-top: 1rem;">
+                    <div class="result-header" style="background: #d1ecf1; color: #0c5460;">
+                        <strong>Policy JSON</strong>
+                    </div>
+                    <div class="result-body">
+                        <pre id="policy-json"></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Policy Tester Tab -->
+            <section class="tab-content input-section" data-content="policy-tester" style="display: none;">
+                <h2>Policy Tester</h2>
+                <p style="margin-bottom: 1rem; color: #666;">Test policy evaluation with token + request context</p>
+                
+                <div class="form-group">
+                    <label for="tester-token"><strong>Token with Policy</strong></label>
+                    <textarea id="tester-token" rows="4" placeholder="Paste a token created with Policy Builder"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tester-action"><strong>Action</strong></label>
+                    <input type="text" id="tester-action" placeholder="payments.send" value="payments.send">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tester-resource-type"><strong>Resource Type</strong></label>
+                        <input type="text" id="tester-resource-type" placeholder="merchant" value="merchant">
+                    </div>
+                    <div class="form-group">
+                        <label for="tester-resource-id"><strong>Resource ID</strong></label>
+                        <input type="text" id="tester-resource-id" placeholder="airbnb" value="">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tester-amount"><strong>Amount</strong></label>
+                        <input type="number" id="tester-amount" placeholder="250" value="">
+                    </div>
+                    <div class="form-group">
+                        <label for="tester-currency"><strong>Currency</strong></label>
+                        <input type="text" id="tester-currency" placeholder="USD" value="USD">
+                    </div>
+                </div>
+                
+                <button id="test-policy-btn" class="btn-primary">Test Policy</button>
+                
+                <div id="policy-test-output" class="output-section" style="display: none; margin-top: 1rem;">
+                    <div id="policy-test-header" class="result-header"></div>
+                    <div class="result-body">
+                        <pre id="policy-test-result"></pre>
+                    </div>
+                </div>
             </section>
 
             <section class="output-section" id="output" style="display: none;">

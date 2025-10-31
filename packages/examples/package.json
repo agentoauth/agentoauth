@@ -1,11 +1,14 @@
 {
   "name": "@agentoauth/examples",
-  "version": "0.5.0",
+  "version": "0.7.0",
   "description": "Example scripts for AgentOAuth protocol",
   "type": "module",
   "scripts": {
     "issue": "node issue-token.js",
     "verify": "node verify-token.js",
+    "issue-policy": "node issue-with-policy.js",
+    "verify-policy": "node verify-with-policy.js",
+    "test-e2e": "node test-policy-e2e.js",
     "build": "echo 'No build needed for examples'",
     "lint": "echo 'No linting for examples'",
     "test": "echo 'No tests for examples'"

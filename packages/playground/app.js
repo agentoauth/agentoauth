@@ -370,3 +370,179 @@ audienceInput.addEventListener('keypress', (e) => {
     }
 });
 
+// Tab switching
+const tabButtons = document.querySelectorAll('.tab-btn');
+const tabContents = document.querySelectorAll('.tab-content');
+
+tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+        const targetTab = btn.dataset.tab;
+        
+        // Remove active from all
+        tabButtons.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        
+        // Add active to clicked tab
+        btn.classList.add('active');
+        document.querySelector(`[data-content="${targetTab}"]`).classList.add('active');
+    });
+});
+
+// Policy Builder functionality
+const buildPolicyBtn = document.getElementById('build-policy-btn');
+const createTokenBtn = document.getElementById('create-token-btn');
+
+buildPolicyBtn.addEventListener('click', () => {
+    const policyId = document.getElementById('policy-id').value || generatePolicyId();
+    const actions = document.getElementById('policy-actions').value.split(',').map(s => s.trim()).filter(Boolean);
+    const merchants = document.getElementById('policy-merchants').value.split(',').map(s => s.trim()).filter(Boolean);
+    const amount = parseFloat(document.getElementById('policy-amount').value) || 0;
+    const currency = document.getElementById('policy-currency').value || 'USD';
+    const periodAmount = parseFloat(document.getElementById('policy-period-amount').value) || 0;
+    const period = document.getElementById('policy-period').value;
+    const start = document.getElementById('policy-start').value;
+    const end = document.getElementById('policy-end').value;
+    const tz = document.getElementById('policy-tz').value;
+    const strict = document.getElementById('policy-strict').checked;
+    
+    // Build policy object
+    const policy = {
+        version: 'pol.v0.2',
+        id: policyId,
+        actions: actions,
+        resources: merchants.length > 0 ? [{
+            type: 'merchant',
+            match: { ids: merchants }
+        }] : [],
+        limits: {},
+        strict: strict
+    };
+    
+    if (amount > 0) {
+        policy.limits.per_txn = { amount, currency };
+    }
+    
+    if (periodAmount > 0) {
+        policy.limits.per_period = { amount: periodAmount, currency, period };
+    }
+    
+    if (start && end) {
+        policy.constraints = {
+            time: { start, end }
+        };
+        if (tz) policy.constraints.time.tz = tz;
+    }
+    
+    // Show policy JSON
+    document.getElementById('policy-json').textContent = JSON.stringify(policy, null, 2);
+    document.getElementById('policy-output').style.display = 'block';
+    
+    // Auto-fill policy ID if was empty
+    if (!document.getElementById('policy-id').value) {
+        document.getElementById('policy-id').value = policyId;
+    }
+    
+    console.log('✅ Policy built:', policy);
+});
+
+createTokenBtn.addEventListener('click', async () => {
+    const apiUrl = apiUrlInput.value.trim();
+    const policyId = document.getElementById('policy-id').value || generatePolicyId();
+    
+    // Get policy JSON
+    const policyJson = document.getElementById('policy-json').textContent;
+    if (!policyJson) {
+        alert('Please build policy first');
+        return;
+    }
+    
+    const policy = JSON.parse(policyJson);
+    
+    createTokenBtn.classList.add('loading');
+    createTokenBtn.textContent = 'Creating...';
+    
+    try {
+        // Note: In browser, we need to call verifier API to create token
+        // The demo/create-token endpoint needs to be enhanced to accept policy
+        // For now, show instructions
+        alert('Creating token with policy requires backend support. Run: node packages/examples/issue-with-policy.js');
+        console.log('Policy for token:', policy);
+    } catch (error) {
+        console.error('Error creating token:', error);
+        alert('Error: ' + error.message);
+    } finally {
+        createTokenBtn.classList.remove('loading');
+        createTokenBtn.textContent = 'Create Token with Policy';
+    }
+});
+
+// Policy Tester functionality
+const testPolicyBtn = document.getElementById('test-policy-btn');
+
+testPolicyBtn.addEventListener('click', async () => {
+    const token = document.getElementById('tester-token').value.trim();
+    const action = document.getElementById('tester-action').value.trim();
+    const resourceType = document.getElementById('tester-resource-type').value.trim();
+    const resourceId = document.getElementById('tester-resource-id').value.trim();
+    const amount = document.getElementById('tester-amount').value;
+    const currency = document.getElementById('tester-currency').value.trim();
+    const apiUrl = apiUrlInput.value.trim();
+    
+    if (!token) {
+        alert('Please paste a token');
+        return;
+    }
+    
+    testPolicyBtn.classList.add('loading');
+    testPolicyBtn.textContent = 'Testing...';
+    
+    try {
+        const requestBody = {
+            token,
+            action,
+            resource: (resourceType && resourceId) ? { type: resourceType, id: resourceId } : undefined,
+            amount: amount ? parseFloat(amount) : undefined,
+            currency: currency || undefined
+        };
+        
+        const response = await fetch(`${apiUrl}/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+        });
+        
+        const result = await response.json();
+        
+        const testOutput = document.getElementById('policy-test-output');
+        const testHeader = document.getElementById('policy-test-header');
+        const testResult = document.getElementById('policy-test-result');
+        
+        testOutput.style.display = 'block';
+        
+        if (result.valid) {
+            testHeader.className = 'result-header valid';
+            testHeader.innerHTML = '✅ Policy Decision: ALLOW';
+        } else {
+            testHeader.className = 'result-header invalid';
+            testHeader.innerHTML = '❌ Policy Decision: DENY';
+        }
+        
+        testResult.textContent = JSON.stringify(result, null, 2);
+        
+        console.log('Policy test result:', result);
+    } catch (error) {
+        console.error('Policy test error:', error);
+        alert('Error: ' + error.message);
+    } finally {
+        testPolicyBtn.classList.remove('loading');
+        testPolicyBtn.textContent = 'Test Policy';
+    }
+});
+
+// Helper function to generate policy ID
+function generatePolicyId() {
+    return 'pol_' + Array.from(crypto.getRandomValues(new Uint8Array(12)))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+

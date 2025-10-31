@@ -2,10 +2,20 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { verify as verifyToken } from '@agentoauth/sdk';
 import { generateDemoKeyPair, type KeyPair } from './keys.js';
-import { revokeToken, isRevoked, markAsUsed, isUsed, getStats } from './revocation.js';
+import { revokeToken, revokePolicy, isRevoked, isPolicyRevoked, markAsUsed, isUsed, getStats } from './revocation.js';
+import { evaluatePolicy, type PolicyV2, type RequestContext, type PolicyStorage } from './policy/engine.js';
+import { hashPolicy } from './policy/canonicalize.js';
+import { signReceipt, createReceiptId, type Receipt } from './receipts/index.js';
+import { MemoryStorage } from './storage/memory.js';
 import crypto from 'node:crypto';
 
 const app = new Hono();
+
+// Storage for budget tracking (in-memory by default)
+let storage: PolicyStorage = new MemoryStorage();
+
+// Storage for receipts (in-memory map of receipt_id -> signed_receipt_jwt)
+const receiptStorage = new Map<string, string>();
 
 // Request logging middleware
 app.use('/*', async (c, next) => {
@@ -128,16 +138,142 @@ app.post('/verify', async (c) => {
             code: 'REVOKED'
           });
         }
-        
-        // Check for replay attack
-        if (!markAsUsed(jti, result.payload.exp)) {
-          console.warn('🚨 REPLAY ATTACK detected:', { jti, tokenHash });
+      }
+      
+      // Policy evaluation (act.v0.2 with policy field)
+      if (result.payload.policy && result.payload.policy_hash) {
+        try {
+          // Check if policy is revoked
+          if (isPolicyRevoked(result.payload.policy.id)) {
+            console.info('❌ Policy REVOKED:', { policyId: result.payload.policy.id, tokenHash });
+            return c.json({
+              valid: false,
+              error: 'Policy has been revoked',
+              code: 'POLICY_REVOKED'
+            });
+          }
+          
+          // Validate policy hash
+          const computedHash = hashPolicy(result.payload.policy);
+          if (computedHash !== result.payload.policy_hash) {
+            console.error('❌ Policy hash mismatch:', {
+              expected: result.payload.policy_hash,
+              computed: computedHash
+            });
+            return c.json({
+              valid: false,
+              error: 'Policy hash verification failed',
+              code: 'INVALID_POLICY_HASH'
+            });
+          }
+          
+          // Extract request context from body
+          const action = body?.action || result.payload.scope;
+          const resource = body?.resource ? {
+            type: body.resource.type,
+            id: body.resource.id
+          } : undefined;
+          const amount = body?.amount;
+          const currency = body?.currency;
+          
+          const context = {
+            action,
+            resource,
+            amount,
+            currency,
+            timestamp: Math.floor(Date.now() / 1000)
+          };
+          
+          // Evaluate policy
+          console.log('🔍 Evaluating policy:', { policyId: result.payload.policy.id, context });
+          const policyResult = evaluatePolicy(result.payload.policy, context, storage);
+          
+          // Generate signed receipt
+          const receiptId = createReceiptId();
+          const receiptToken = await signReceipt({
+            id: receiptId,
+            policy_id: result.payload.policy.id,
+            decision: policyResult.allowed ? 'ALLOW' : 'DENY',
+            reason: policyResult.reason,
+            timestamp: Math.floor(Date.now() / 1000),
+            remaining: policyResult.remaining
+          }, keyPair.privateJWK, keyPair.kid);
+          
+          // Store receipt
+          receiptStorage.set(receiptId, receiptToken);
+          
+          // Increment budget if allowed
+          if (policyResult.allowed && amount && result.payload.policy.limits.per_period) {
+            const limit = result.payload.policy.limits.per_period;
+            const date = new Date(context.timestamp * 1000);
+            let periodKey: string;
+            
+            switch (limit.period) {
+              case 'hour':
+                periodKey = `budget:${result.payload.policy.id}:hour:${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}-${date.getUTCHours()}`;
+                break;
+              case 'day':
+                periodKey = `budget:${result.payload.policy.id}:day:${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}`;
+                break;
+              case 'week':
+                const weekStart = new Date(date);
+                weekStart.setUTCDate(date.getUTCDate() - date.getUTCDay());
+                periodKey = `budget:${result.payload.policy.id}:week:${weekStart.getUTCFullYear()}-W${Math.ceil((date.getTime() - new Date(date.getUTCFullYear(), 0, 1).getTime()) / 86400000 / 7)}`;
+                break;
+              case 'month':
+                periodKey = `budget:${result.payload.policy.id}:month:${date.getUTCFullYear()}-${date.getUTCMonth() + 1}`;
+                break;
+              default:
+                periodKey = '';
+            }
+            
+            if (periodKey && storage) {
+              storage.incrementBudget(periodKey, amount);
+            }
+          }
+          
+          // Log policy evaluation
+          console.info('📋 Policy evaluation:', {
+            policyId: result.payload.policy.id,
+            decision: policyResult.allowed ? 'ALLOW' : 'DENY',
+            reason: policyResult.reason,
+            receiptId
+          });
+          
+          // Return enhanced result with receipt
+          return c.json({
+            valid: policyResult.allowed,
+            payload: result.payload,
+            policy_decision: {
+              allowed: policyResult.allowed,
+              reason: policyResult.reason,
+              remaining: policyResult.remaining,
+              receipt_id: receiptId,
+              receipt: receiptToken
+            },
+            error: policyResult.allowed ? undefined : policyResult.reason,
+            code: policyResult.allowed ? undefined : 'POLICY_DENY'
+          });
+        } catch (error) {
+          console.error('❌ Policy evaluation error:', error);
           return c.json({
             valid: false,
-            error: 'Token replay detected - token already used',
-            code: 'REPLAY'
-          });
+            error: error instanceof Error ? error.message : 'Policy evaluation failed',
+            code: 'POLICY_ERROR'
+          }, 500);
         }
+      }
+    }
+    
+    // For non-policy tokens, check replay protection here
+    if (result.valid && result.payload && (!result.payload.policy) && result.payload.jti) {
+      if (!markAsUsed(result.payload.jti, result.payload.exp)) {
+        console.warn('🚨 REPLAY ATTACK detected:', { jti: result.payload.jti, tokenHash });
+        return c.json({
+          valid: false,
+          error: 'Token replay detected - token already used',
+          code: 'REPLAY'
+        });
       }
     }
 
@@ -193,6 +329,7 @@ app.get('/health', (c) => {
     uptime: process.uptime(),
     keyId: keyPair?.kid || null,
     revoked: stats.revokedCount,
+    revokedPolicies: stats.revokedPolicyCount,
     replayCache: stats.replayCacheSize
   };
 
@@ -207,31 +344,45 @@ app.post('/revoke', async (c) => {
   
   try {
     const body = await c.req.json();
-    const { jti } = body;
+    const { jti, policy_id } = body;
     
-    if (!jti || typeof jti !== 'string') {
-      console.error('❌ Missing or invalid jti');
+    // Support revoking by jti or policy_id
+    if (jti && typeof jti === 'string') {
+      console.log(`🚫 Revoking token: ${jti}`);
+      const wasRevoked = revokeToken(jti);
+      
+      if (!wasRevoked) {
+        console.info('ℹ️  Token already revoked:', jti);
+      }
+      
+      return c.json({
+        success: true,
+        jti,
+        revokedAt: new Date().toISOString(),
+        alreadyRevoked: !wasRevoked
+      });
+    } else if (policy_id && typeof policy_id === 'string') {
+      console.log(`🚫 Revoking policy: ${policy_id}`);
+      const wasRevoked = revokePolicy(policy_id);
+      
+      if (!wasRevoked) {
+        console.info('ℹ️  Policy already revoked:', policy_id);
+      }
+      
+      return c.json({
+        success: true,
+        policy_id,
+        revokedAt: new Date().toISOString(),
+        alreadyRevoked: !wasRevoked
+      });
+    } else {
+      console.error('❌ Missing or invalid jti or policy_id');
       return c.json({
         success: false,
-        error: 'Missing or invalid jti field',
+        error: 'Missing or invalid jti or policy_id field',
         code: 'INVALID_REQUEST'
       }, 400);
     }
-    
-    console.log(`🚫 Revoking token: ${jti}`);
-    
-    const wasRevoked = revokeToken(jti);
-    
-    if (!wasRevoked) {
-      console.info('ℹ️  Token already revoked:', jti);
-    }
-    
-    return c.json({
-      success: true,
-      jti,
-      revokedAt: new Date().toISOString(),
-      alreadyRevoked: !wasRevoked
-    });
     
   } catch (error) {
     console.error('❌ Revocation error:', error);
@@ -241,6 +392,31 @@ app.post('/revoke', async (c) => {
       code: 'SERVER_ERROR'
     }, 500);
   }
+});
+
+// Receipt retrieval endpoint
+app.get('/receipts/:id', async (c) => {
+  const receiptId = c.req.param('id');
+  
+  if (!receiptId) {
+    return c.json({
+      error: 'Receipt ID required',
+      code: 'INVALID_REQUEST'
+    }, 400);
+  }
+  
+  const receiptToken = receiptStorage.get(receiptId);
+  
+  if (!receiptToken) {
+    return c.json({
+      error: 'Receipt not found',
+      code: 'NOT_FOUND'
+    }, 404);
+  }
+  
+  return c.json({
+    receipt: receiptToken
+  });
 });
 
 // Demo token creation endpoint (for testing) with input validation
@@ -317,8 +493,8 @@ app.post('/demo/create-token', async (c) => {
     const { request: createToken } = await import('@agentoauth/sdk');
     console.log('✅ SDK imported');
 
-    const payload = {
-      ver: '0.2' as const,
+    const payload: any = {
+      ver: body.policy ? 'act.v0.2' as const : '0.2' as const,
       jti: body.jti || crypto.randomUUID(),
       user: body.user,
       agent: body.agent,
@@ -328,6 +504,13 @@ app.post('/demo/create-token', async (c) => {
       exp: body.exp || Math.floor(Date.now() / 1000) + 3600,
       nonce: body.nonce || crypto.randomUUID()
     };
+
+    // Add policy if provided
+    if (body.policy) {
+      const { hashPolicy } = await import('@agentoauth/sdk');
+      payload.policy = body.policy;
+      payload.policy_hash = hashPolicy(body.policy);
+    }
 
     console.log('🔐 Creating token with payload:', JSON.stringify(payload, null, 2));
 
@@ -374,6 +557,7 @@ initializeKeys().then(async () => {
   console.log(`🚀 AgentOAuth Verifier API starting on port ${port}...`);
   console.log(`   JWKS: http://localhost:${port}/.well-known/jwks.json`);
   console.log(`   Verify: POST http://localhost:${port}/verify`);
+  console.log(`   Receipts: GET http://localhost:${port}/receipts/:id`);
   console.log(`   Demo: POST http://localhost:${port}/demo/create-token`);
   
   // Import and use Hono's Node.js adapter

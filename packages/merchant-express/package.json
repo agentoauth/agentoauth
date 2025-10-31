@@ -1,6 +1,6 @@
 {
   "name": "@agentoauth/merchant-express",
-  "version": "0.6.0", 
+  "version": "0.7.0", 
   "description": "Express middleware for merchants to extract and validate AgentOAuth tokens",
   "type": "module",
   "main": "dist/index.js",

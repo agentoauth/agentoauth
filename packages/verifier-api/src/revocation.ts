@@ -8,6 +8,9 @@
 // In-memory revocation list - Set of revoked jti values
 const revokedTokens = new Set<string>();
 
+// In-memory policy revocation list - Set of revoked policy IDs
+const revokedPolicies = new Set<string>();
+
 // In-memory replay cache - Map of jti to expiration time
 const usedTokens = new Map<string, number>();
 
@@ -85,11 +88,38 @@ export function cleanupExpired(): void {
 }
 
 /**
+ * Revoke a policy by its ID (revokes all tokens using this policy)
+ * 
+ * @param policyId - Policy ID to revoke
+ * @returns true if revoked, false if already revoked
+ */
+export function revokePolicy(policyId: string): boolean {
+  if (revokedPolicies.has(policyId)) {
+    return false; // Already revoked
+  }
+  
+  revokedPolicies.add(policyId);
+  console.log(`🚫 Policy revoked: ${policyId}`);
+  return true;
+}
+
+/**
+ * Check if a policy is revoked
+ * 
+ * @param policyId - Policy ID to check
+ * @returns true if revoked, false otherwise
+ */
+export function isPolicyRevoked(policyId: string): boolean {
+  return revokedPolicies.has(policyId);
+}
+
+/**
  * Get revocation statistics
  */
 export function getStats() {
   return {
     revokedCount: revokedTokens.size,
+    revokedPolicyCount: revokedPolicies.size,
     replayCacheSize: usedTokens.size
   };
 }
@@ -99,6 +129,7 @@ export function getStats() {
  */
 export function clearAll(): void {
   revokedTokens.clear();
+  revokedPolicies.clear();
   usedTokens.clear();
   console.log('🧹 Cleared all revocations and replay cache');
 }

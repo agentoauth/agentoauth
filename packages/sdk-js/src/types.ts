@@ -1,9 +1,9 @@
 /**
- * AgentOAuth Token Payload (v0.2)
+ * AgentOAuth Token Payload (v0.2 / act.v0.2)
  */
 export interface AgentOAuthPayload {
   /** Specification version */
-  ver: '0.2' | '0.1';
+  ver: '0.2' | '0.1' | 'act.v0.2';
   /** JWT ID - unique token identifier for revocation and replay protection (required in v0.2) */
   jti?: string;
   /** User identifier (DID or stable ID) */
@@ -12,11 +12,15 @@ export interface AgentOAuthPayload {
   agent: string;
   /** OAuth-style scope */
   scope: string;
-  /** Authorization limits */
+  /** Authorization limits (legacy, use policy.limits for structured rules) */
   limit: {
     amount: number;
     currency: string;
   };
+  /** Structured policy rules (optional in act.v0.2) */
+  policy?: any;
+  /** SHA-256 hash of canonicalized policy (required when policy is present) */
+  policy_hash?: string;
   /** Audience (optional) */
   aud?: string;
   /** Expiration timestamp (Unix seconds) */

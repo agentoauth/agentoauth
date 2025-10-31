@@ -8,7 +8,7 @@ export const payloadSchema = {
   properties: {
     ver: {
       type: 'string',
-      enum: ['0.2', '0.1']
+      enum: ['0.2', '0.1', 'act.v0.2']
     },
     jti: {
       type: 'string',

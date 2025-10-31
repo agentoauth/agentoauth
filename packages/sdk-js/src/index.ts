@@ -18,12 +18,25 @@ export {
   rotateKeys 
 } from './consent.js';
 
-// Policy helpers
+// Policy helpers (legacy v0.1)
 export { 
   buildPolicy, 
   hasScope, 
   validatePolicy 
 } from './policy.js';
+
+// Policy v0.2 helpers
+export {
+  buildPolicy as buildPolicyV2,
+  canonicalizePolicy,
+  hashPolicy,
+  verifyPolicyHash,
+  PolicyBuilder,
+  type PolicyV2,
+  type ResourceMatch,
+  type PolicyLimits,
+  type PolicyConstraints
+} from './policy-v2.js';
 
 // Key management
 export { 

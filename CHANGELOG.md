@@ -2,7 +2,47 @@
 
 All notable changes to the AgentOAuth protocol will be documented in this file.
 
-## [0.6.0] - 2025-01-XX
+## [0.7.0] - 2025-10-31
+
+### Added - Phase 2A: Policy Support (Programmable Consent) 🎯
+- **Policy Schema (pol.v0.2)**: Structured JSON schema for machine-readable authorization rules
+- **Token Schema (act.v0.2)**: Extended token payload with `policy` and `policy_hash` fields
+- **Canonical JSON Hashing**: Deterministic serialization and SHA-256 hashing for policy integrity
+- **Policy Builder SDK**: Fluent API for creating policies with chainable methods
+- **Policy Evaluation Engine**: Stateless evaluation logic for actions, resources, limits, and constraints
+- **JWS-Signed Receipts**: Verifiable receipts generated after policy evaluation
+- **Budget Tracking**: Stateful per-period limits with memory and Redis storage adapters
+- **Policy Revocation**: Extended revocation to support both JTI and policy ID
+- **Playground Enhancements**: Intent Builder and Policy Tester UI tabs
+- **New Examples**: `issue-with-policy.js` and `verify-with-policy.js`
+
+### Enhanced 🔧
+- Verifier API `/verify` endpoint now evaluates policies and returns signed receipts
+- New `/receipts/:id` endpoint to retrieve signed policy evaluation receipts
+- Extended `/revoke` endpoint to support policy-level revocation
+- SDK `issueConsent()` accepts optional `policy` parameter
+- Health check includes policy revocation statistics
+
+### Policy Features
+- Per-transaction limits with amount and currency validation
+- Per-period budgets (hour, day, week, month) with stateful tracking
+- Resource whitelisting (merchants, APIs, etc.)
+- Time-based constraints (day of week, time windows, timezone)
+- Strict mode for unknown field handling
+- Action-based authorization rules
+
+### Documentation
+- Policy schema specification and examples
+- Updated Verifier API README with policy evaluation flow
+- Policy Builder usage examples
+- Phase 2A implementation summary
+
+### Version Updates
+- All packages bumped to v0.7.0
+- New policy schema files: `pol.v0.2.schema.json`, `act.v0.2.schema.json`
+- Playground updated with Policy Builder and Policy Tester tabs
+
+## [0.6.0] - 2025-01-15
 
 ### Added 🚀
 - **Hosted Verifier (Alpha)**: Production-ready hosted verifier at `verifier.agentoauth.org`

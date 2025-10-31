@@ -6,6 +6,9 @@ Reference implementation of an AgentOAuth verification server.
 
 - JWKS endpoint at `/.well-known/jwks.json`
 - Token verification endpoint at `/verify` with input validation
+- **Policy evaluation** (v0.2) - Structured rule enforcement with receipts
+- Receipt retrieval endpoint at `/receipts/:id`
+- Revocation endpoint at `/revoke` (token + policy support)
 - Health check endpoint at `/health` (CI-ready)
 - Demo token creation endpoint (for testing)
 - Explicit CORS configuration (`Access-Control-Allow-Origin: *`)
@@ -52,10 +55,13 @@ Health check endpoint for CI and monitoring.
 {
   "status": "ok",
   "service": "agentoauth-verifier",
-  "version": "0.1.0",
-  "timestamp": "2025-10-21T12:34:56.789Z",
+  "version": "0.2.0",
+  "timestamp": "2025-10-31T17:10:52.789Z",
   "uptime": 123.456,
-  "keyId": "key-1729512345"
+  "keyId": "key-1729512345",
+  "revoked": 0,
+  "revokedPolicies": 0,
+  "replayCache": 0
 }
 ```
 
@@ -104,6 +110,68 @@ Verify an AgentOAuth token with comprehensive input validation.
 **Security:** Logs token hash only (never full token):
 ```
 🔐 Verification attempt: { tokenHash: '3a5d8f2e9c1b4e7a', ... }
+```
+
+**Policy Evaluation (v0.2):** Enhanced response with policy evaluation:
+```json
+{
+  "valid": true,
+  "payload": { ... },
+  "policy_decision": {
+    "allowed": true,
+    "reason": null,
+    "remaining": { "period": 1250, "currency": "USD" },
+    "receipt_id": "receipt_abc123...",
+    "receipt": "eyJhbGc..."  // JWS-signed receipt
+  }
+}
+```
+
+### `GET /receipts/:id` (NEW in v0.2)
+
+Retrieve a signed receipt from a policy evaluation.
+
+**Response:** `200 OK`
+```json
+{
+  "receipt": "eyJhbGc..."  // JWS-signed receipt
+}
+```
+
+**Error:** `404 Not Found`
+```json
+{
+  "error": "Receipt not found",
+  "code": "NOT_FOUND"
+}
+```
+
+### `POST /revoke` (Enhanced in v0.2)
+
+Revoke a token by JTI or an entire policy by policy ID.
+
+**Request (revoke token):**
+```json
+{
+  "jti": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Request (revoke policy):**
+```json
+{
+  "policy_id": "pol_01HXZ8K9P4QN2M1R3T5V7W9X"
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "success": true,
+  "jti": "550e8400-e29b-41d4-a716-446655440000",
+  "revokedAt": "2025-10-31T17:10:52.789Z",
+  "alreadyRevoked": false
+}
 ```
 
 ### `POST /demo/create-token`

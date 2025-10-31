@@ -1,14 +1,14 @@
 # AgentOAuth
 
-## AgentOAuth v0.6 — Alpha
+## AgentOAuth v0.7 — Alpha
 
 > Public read-only repository. Spec and APIs are evolving.
 
 A neutral protocol for AI agents to prove who authorized what. AgentOAuth provides verifiable authorization tokens with clear scope, limits, and expiration—built on OAuth/JWT patterns for maximum interoperability.
 
-**Status**: ✅ v0.6 Complete | 📦 19 Unit Tests + 23 Conformance Tests Passing | 🔐 Production Ready
+**Status**: ✅ v0.7 Complete | 📦 19 Unit Tests + 23 Conformance Tests Passing | 🔐 Production Ready
 
-**Latest v0.6**: Hosted verifier removes self-hosting friction, global edge deployment, privacy-first audit logging
+**Latest v0.7**: Policy Support (Phase 2A) - programmable consent with pol.v0.2 schema, policy evaluation engine, JWS receipts, budget tracking
 
 ## 🚀 5-Minute Quickstart
 

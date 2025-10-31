@@ -1,6 +1,6 @@
 {
   "name": "@agentoauth/hosted-verifier",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Production-ready hosted verifier with API keys, rate limiting, and audit logs",
   "type": "module",
   "main": "src/index.ts",

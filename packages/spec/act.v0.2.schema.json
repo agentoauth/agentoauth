@@ -1,0 +1,101 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentoauth.org/schemas/consent-v0.2.json",
+  "title": "AgentOAuth Consent Token Payload (act.v0.2)",
+  "description": "Schema for AgentOAuth v0.2 token payload with policy support",
+  "type": "object",
+  "required": ["ver", "jti", "user", "agent", "scope", "limit", "exp", "nonce"],
+  "properties": {
+    "ver": {
+      "type": "string",
+      "const": "act.v0.2",
+      "description": "Specification version"
+    },
+    "jti": {
+      "type": "string",
+      "minLength": 8,
+      "description": "JWT ID - unique token identifier for revocation and replay protection"
+    },
+    "user": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the authorizing user (DID or stable ID)"
+    },
+    "agent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the delegated agent"
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[a-zA-Z0-9_:.\\-]+$",
+      "description": "OAuth-style scope defining authorized action"
+    },
+    "limit": {
+      "type": "object",
+      "required": ["amount", "currency"],
+      "properties": {
+        "amount": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Maximum amount allowed (legacy field)"
+        },
+        "currency": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 3,
+          "pattern": "^[A-Z]{3}$",
+          "description": "ISO 4217 currency code (legacy field)"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Legacy constraints (use policy.limits for structured rules)"
+    },
+    "policy": {
+      "type": "object",
+      "$ref": "pol.v0.2.schema.json",
+      "description": "Structured policy rules (optional in act.v0.2)"
+    },
+    "policy_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$",
+      "description": "SHA-256 hash of canonicalized policy JSON"
+    },
+    "aud": {
+      "type": "string",
+      "description": "Intended audience/verifier (optional)"
+    },
+    "exp": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Expiration time as Unix timestamp (seconds)"
+    },
+    "nonce": {
+      "type": "string",
+      "minLength": 8,
+      "description": "Unique value for replay protection"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "policy": { "type": "object" }
+        }
+      },
+      "then": {
+        "required": ["policy_hash"],
+        "properties": {
+          "policy_hash": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$",
+            "description": "Required when policy is present"
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": true
+}
+

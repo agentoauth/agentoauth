@@ -45,6 +45,43 @@ AUDIENCE=merchant.example node verify-token.js
 - Verification result (✅ valid or ❌ invalid)
 - Error details if invalid
 
+### issue-with-policy.js (NEW in v0.2)
+
+Creates an authorization token with structured policy rules (pol.v0.2).
+
+**Usage:**
+```bash
+node issue-with-policy.js
+```
+
+**Output:**
+- Generated keypair
+- Policy created with fluent API
+- Policy JSON
+- Token with policy embedded
+- Policy hash for integrity verification
+
+**Policy Features:**
+- Actions whitelist
+- Resource matching (merchants, APIs, etc.)
+- Per-transaction limits
+- Per-period budgets (hour/day/week/month)
+- Time constraints (days, hours, timezone)
+
+### verify-with-policy.js (NEW in v0.2)
+
+Verifies a token with policy evaluation.
+
+**Usage:**
+```bash
+node verify-with-policy.js [token]
+```
+
+**Output:**
+- Basic token verification
+- Policy embedded in token
+- Instructions for full policy evaluation via Verifier API
+
 ## Environment Variables
 
 - `JWKS_URL` - JWKS endpoint (default: http://localhost:3000/.well-known/jwks.json)

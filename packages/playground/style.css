@@ -245,6 +245,87 @@ button {
     pointer-events: none;
 }
 
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.tab-btn {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    font-weight: 600;
+    color: #666;
+    transition: all 0.3s;
+}
+
+.tab-btn:hover {
+    color: #667eea;
+}
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.tab-content h2 {
+    margin-bottom: 0.5rem;
+    color: #667eea;
+}
+
+.policy-form {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.form-row input {
+    margin-bottom: 0;
+}
+
+.form-group label strong {
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: white;
+}
+
+select:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
 @media (max-width: 600px) {
     header h1 {
         font-size: 2rem;
@@ -259,6 +340,14 @@ button {
         display: block;
         width: 100%;
         margin: 0.5rem 0;
+    }
+    
+    .tabs {
+        flex-direction: column;
+    }
+    
+    .form-row {
+        grid-template-columns: 1fr;
     }
 }
 

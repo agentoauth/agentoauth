@@ -1,0 +1,151 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://agentoauth.org/schemas/policy-v0.2.json",
+  "title": "AgentOAuth Policy Schema (pol.v0.2)",
+  "description": "Structured policy rules for verifiable consent enforcement",
+  "type": "object",
+  "required": ["version", "id", "actions", "resources", "limits"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "const": "pol.v0.2",
+      "description": "Policy schema version"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique policy identifier (used for revocation tracking)"
+    },
+    "actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-zA-Z0-9_:.\\-]+$"
+      },
+      "description": "List of permitted actions (e.g., ['payments.send', 'data.read'])"
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "match"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Resource type (e.g., 'merchant', 'api', 'database')"
+          },
+          "match": {
+            "type": "object",
+            "description": "Matching criteria for resources",
+            "properties": {
+              "ids": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Whitelist of resource IDs"
+              },
+              "prefixes": {
+                "type": "array",
+                "items": { "type": "string" },
+                "description": "Whitelist of resource ID prefixes"
+              }
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "List of permitted resources with matching rules"
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "per_txn": {
+          "type": "object",
+          "required": ["amount", "currency"],
+          "properties": {
+            "amount": {
+              "type": "number",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Per-transaction limit"
+        },
+        "per_period": {
+          "type": "object",
+          "required": ["amount", "currency", "period"],
+          "properties": {
+            "amount": {
+              "type": "number",
+              "minimum": 0
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$"
+            },
+            "period": {
+              "type": "string",
+              "enum": ["hour", "day", "week", "month"],
+              "description": "Budget period for tracking"
+            }
+          },
+          "additionalProperties": false,
+          "description": "Per-period budget limit (stateful tracking)"
+        }
+      },
+      "minProperties": 1,
+      "description": "Financial limits on policy"
+    },
+    "constraints": {
+      "type": "object",
+      "properties": {
+        "time": {
+          "type": "object",
+          "properties": {
+            "dow": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+              },
+              "description": "Allowed days of week"
+            },
+            "start": {
+              "type": "string",
+              "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              "description": "Start time (HH:MM, 24h)"
+            },
+            "end": {
+              "type": "string",
+              "pattern": "^([01]\\d|2[0-3]):([0-5]\\d)$",
+              "description": "End time (HH:MM, 24h)"
+            },
+            "tz": {
+              "type": "string",
+              "description": "Timezone (IANA, e.g., 'America/Los_Angeles')"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "description": "Time-based and other constraints"
+    },
+    "strict": {
+      "type": "boolean",
+      "default": false,
+      "description": "If true, unknown fields cause policy denial"
+    },
+    "meta": {
+      "type": "object",
+      "description": "Metadata (note, description, etc.)",
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}
+

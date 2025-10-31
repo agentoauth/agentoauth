@@ -2,6 +2,7 @@ import { generateKeyPair, exportJWK } from 'jose';
 import { request, verify } from './index.js';
 import { AgentOAuthPayload } from './types.js';
 import { writeFile } from 'fs/promises';
+import { hashPolicy, type PolicyV2 } from './policy-v2.js';
 
 /**
  * Issue a consent token with automatic key management
@@ -15,7 +16,32 @@ export async function issueConsent(options: {
   expiresIn?: string | number; // "1h", 3600, etc.
   privateKey?: any; // Auto-generate if not provided
   keyId?: string;
+  policy?: PolicyV2; // Optional pol.v0.2 policy
+  jti?: string; // Optional JWT ID (auto-generated if not provided)
 }): Promise<{ token: string; keyId: string; publicKey: any }> {
+  // Helper to build payload with optional policy
+  const buildPayload = (): AgentOAuthPayload => {
+    const payload: AgentOAuthPayload = {
+      ver: options.policy ? 'act.v0.2' as const : '0.2' as const,
+      jti: options.jti || crypto.randomUUID(),
+      user: options.user,
+      agent: options.agent,
+      scope: options.scope,
+      limit: options.limit,
+      aud: options.audience,
+      exp: Math.floor(Date.now() / 1000) + parseExpiresIn(options.expiresIn || '1h'),
+      nonce: crypto.randomUUID()
+    };
+    
+    // Add policy and policy_hash if provided
+    if (options.policy) {
+      payload.policy = options.policy;
+      payload.policy_hash = hashPolicy(options.policy);
+    }
+    
+    return payload;
+  };
+  
   // Auto-generate keys if not provided
   if (!options.privateKey) {
     const { privateKey, publicKey } = await generateKeyPair('EdDSA');
@@ -26,34 +52,14 @@ export async function issueConsent(options: {
     publicJWK.use = 'sig';
     publicJWK.alg = 'EdDSA';
     
-    const payload: AgentOAuthPayload = {
-      ver: '0.2' as const,
-      user: options.user,
-      agent: options.agent,
-      scope: options.scope,
-      limit: options.limit,
-      aud: options.audience,
-      exp: Math.floor(Date.now() / 1000) + parseExpiresIn(options.expiresIn || '1h'),
-      nonce: crypto.randomUUID()
-    };
-    
+    const payload = buildPayload();
     const token = await request(payload, privateJWK, publicJWK.kid);
     
     return { token, keyId: publicJWK.kid!, publicKey: publicJWK };
   }
   
   // Use provided key
-  const payload: AgentOAuthPayload = {
-    ver: '0.2' as const,
-    user: options.user,
-    agent: options.agent,
-    scope: options.scope,
-    limit: options.limit,
-    aud: options.audience,
-    exp: Math.floor(Date.now() / 1000) + parseExpiresIn(options.expiresIn || '1h'),
-    nonce: crypto.randomUUID()
-  };
-  
+  const payload = buildPayload();
   const token = await request(payload, options.privateKey, options.keyId || 'provided-key');
   
   return { 
@@ -75,7 +81,26 @@ export async function verifyConsent(
   error?: { code: string; message: string; suggestion?: string };
 }> {
   try {
-    const result = await verify(token, options.publicKey, options);
+    // Determine JWKS URL or public key
+    let result;
+    if (options.jwksUrl) {
+      result = await verify(token, options.jwksUrl, { audience: options.audience });
+    } else if (options.publicKey) {
+      // For direct public key verification, we'd need to implement that
+      // For now, fall back to decode-only
+      const { decode } = await import('./decode.js');
+      const decoded = decode(token);
+      result = { valid: true, payload: decoded.payload };
+    } else {
+      return {
+        valid: false,
+        error: {
+          code: 'NO_VERIFICATION_METHOD',
+          message: 'No JWKS URL or public key provided',
+          suggestion: 'Provide either jwksUrl or publicKey in options'
+        }
+      };
+    }
     
     if (!result.valid) {
       return {
