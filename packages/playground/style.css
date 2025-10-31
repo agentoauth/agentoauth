@@ -280,9 +280,57 @@ button {
     display: block;
 }
 
-.tab-content h2 {
+.tab-title {
+    font-size: 1.8rem;
     margin-bottom: 0.5rem;
     color: #667eea;
+}
+
+.tab-description {
+    margin-bottom: 1.5rem;
+    color: #666;
+    font-size: 1rem;
+}
+
+.template-selector {
+    background: #fff3cd;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #ffc107;
+}
+
+.template-selector label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #856404;
+    font-size: 0.95rem;
+}
+
+.template-dropdown {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #ffc107;
+    border-radius: 6px;
+    font-size: 1rem;
+    background: white;
+    cursor: pointer;
+}
+
+.template-dropdown:focus {
+    outline: none;
+    border-color: #ff9800;
+}
+
+.template-description {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 4px;
+    color: #333;
+    font-size: 0.9rem;
+    font-style: italic;
+    border: 1px solid #e0e0e0;
 }
 
 .policy-form {
@@ -290,6 +338,23 @@ button {
     padding: 1.5rem;
     border-radius: 8px;
     margin-bottom: 1rem;
+}
+
+.form-section {
+    background: white;
+    padding: 1.25rem;
+    border-radius: 6px;
+    margin-bottom: 1.5rem;
+    border: 1px solid #e0e0e0;
+}
+
+.form-section-title {
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #667eea;
+    font-weight: 600;
 }
 
 .form-group {
@@ -310,6 +375,66 @@ button {
 .form-group label strong {
     display: block;
     margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+
+.label-badge {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+.label-badge.required {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.label-badge.optional {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.field-hint {
+    display: block;
+    margin-top: 0.25rem;
+    font-size: 0.85rem;
+    color: #666;
+    font-style: italic;
+}
+
+.toggle-section-btn {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: #e7f3ff;
+    border: 2px solid #667eea;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #667eea;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+    margin-bottom: 0;
+}
+
+.toggle-section-btn:hover {
+    background: #d0e7ff;
+    transform: translateY(-1px);
+}
+
+.toggle-icon {
+    font-size: 0.9rem;
+    transition: transform 0.3s;
+}
+
+.toggle-content {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e0e0e0;
 }
 
 select {
@@ -324,6 +449,52 @@ select {
 select:focus {
     outline: none;
     border-color: #667eea;
+}
+
+/* Notification styles */
+.notification {
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    animation: slideIn 0.3s ease-out;
+}
+
+.notification.success {
+    background: #d4edda;
+    color: #155724;
+    border-left: 4px solid #28a745;
+}
+
+.notification.error {
+    background: #f8d7da;
+    color: #721c24;
+    border-left: 4px solid #dc3545;
+}
+
+.notification.info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border-left: 4px solid #17a2b8;
+}
+
+.notification.warning {
+    background: #fff3cd;
+    color: #856404;
+    border-left: 4px solid #ffc107;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @media (max-width: 600px) {
