@@ -3,6 +3,7 @@ import { request, verify } from './index.js';
 import { AgentOAuthPayload } from './types.js';
 import { writeFile } from 'fs/promises';
 import { hashPolicy, type PolicyV2 } from './policy-v2.js';
+import crypto from 'node:crypto';
 
 /**
  * Issue a consent token with automatic key management
