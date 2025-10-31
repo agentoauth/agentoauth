@@ -5,13 +5,12 @@
  */
 
 // Import Node.js crypto for hashing
-let crypto: any;
-try {
-  crypto = require('crypto');
-} catch {
-  // Fallback for browser environments
-  crypto = null;
-}
+import { createHash } from 'node:crypto';
+
+// Create a crypto-like object for compatibility
+const crypto = {
+  createHash: (algorithm: string) => createHash(algorithm)
+};
 
 /**
  * Policy object structure (pol.v0.2)
