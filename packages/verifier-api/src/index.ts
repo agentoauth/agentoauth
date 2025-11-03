@@ -141,7 +141,7 @@ app.post('/verify', async (c) => {
       }
       
       // Policy evaluation (act.v0.2 with policy field)
-      if (result.payload.policy && result.payload.policy_hash) {
+      if ((result.payload as any).policy && (result.payload as any).policy_hash) {
         try {
           // Check if policy is revoked
           if (isPolicyRevoked(result.payload.policy.id)) {
@@ -173,7 +173,8 @@ app.post('/verify', async (c) => {
             type: body.resource.type,
             id: body.resource.id
           } : undefined;
-          const amount = body?.amount;
+          // Ensure amount is a number (JSON parsing should handle this, but be explicit)
+          const amount = body?.amount ? Number(body.amount) : undefined;
           const currency = body?.currency;
           
           const context = {
@@ -185,7 +186,6 @@ app.post('/verify', async (c) => {
           };
           
           // Evaluate policy
-          console.log('🔍 Evaluating policy:', { policyId: result.payload.policy.id, context });
           const policyResult = evaluatePolicy(result.payload.policy, context, storage);
           
           // Generate signed receipt
@@ -202,43 +202,8 @@ app.post('/verify', async (c) => {
           // Store receipt
           receiptStorage.set(receiptId, receiptToken);
           
-          // Increment budget if allowed
-          if (policyResult.allowed && amount && result.payload.policy.limits.per_period) {
-            const limit = result.payload.policy.limits.per_period;
-            const date = new Date(context.timestamp * 1000);
-            let periodKey: string;
-            
-            switch (limit.period) {
-              case 'hour':
-                periodKey = `budget:${result.payload.policy.id}:hour:${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}-${date.getUTCHours()}`;
-                break;
-              case 'day':
-                periodKey = `budget:${result.payload.policy.id}:day:${date.getUTCFullYear()}-${date.getUTCMonth()}-${date.getUTCDate()}`;
-                break;
-              case 'week':
-                const weekStart = new Date(date);
-                weekStart.setUTCDate(date.getUTCDate() - date.getUTCDay());
-                periodKey = `budget:${result.payload.policy.id}:week:${weekStart.getUTCFullYear()}-W${Math.ceil((date.getTime() - new Date(date.getUTCFullYear(), 0, 1).getTime()) / 86400000 / 7)}`;
-                break;
-              case 'month':
-                periodKey = `budget:${result.payload.policy.id}:month:${date.getUTCFullYear()}-${date.getUTCMonth() + 1}`;
-                break;
-              default:
-                periodKey = '';
-            }
-            
-            if (periodKey && storage) {
-              storage.incrementBudget(periodKey, amount);
-            }
-          }
-          
-          // Log policy evaluation
-          console.info('📋 Policy evaluation:', {
-            policyId: result.payload.policy.id,
-            decision: policyResult.allowed ? 'ALLOW' : 'DENY',
-            reason: policyResult.reason,
-            receiptId
-          });
+          // Note: Budget increment now happens atomically inside evaluatePolicy()
+          // to prevent race conditions where check and increment are separate
           
           // Return enhanced result with receipt
           return c.json({

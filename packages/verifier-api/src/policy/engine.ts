@@ -119,7 +119,7 @@ export function evaluatePolicy(
   }
 
   // Check per-transaction limits (stateless)
-  if (context.amount && policy.limits.per_txn) {
+  if (context.amount && policy.limits?.per_txn) {
     const limit = policy.limits.per_txn;
     
     if (context.currency !== limit.currency) {
@@ -138,7 +138,7 @@ export function evaluatePolicy(
   }
 
   // Check per-period budget (stateful, requires storage)
-  if (context.amount && policy.limits.per_period) {
+  if (context.amount && policy.limits?.per_period) {
     const limit = policy.limits.per_period;
     
     if (!storage) {
@@ -160,20 +160,35 @@ export function evaluatePolicy(
     const timestamp = context.timestamp || Math.floor(Date.now() / 1000);
     const budgetKey = getBudgetKey(policy.id, limit.period, timestamp);
     
-    // Check if budget is exhausted
+    // Check if budget is exhausted (BEFORE incrementing)
     const spent = storage.getBudget(budgetKey) || 0;
     const remaining = limit.amount - spent;
     
-    if (context.amount > remaining) {
+    // Check if adding this amount would exceed the limit
+    if (spent + context.amount > limit.amount) {
       return {
         allowed: false,
-        reason: `Amount ${context.amount} ${context.currency} exceeds remaining budget ${remaining.toFixed(2)} ${context.currency}`,
+        reason: `Amount ${context.amount} ${context.currency} exceeds remaining budget ${remaining.toFixed(2)} ${context.currency} (spent: ${spent}, limit: ${limit.amount})`,
         remaining: {
           period: remaining,
           currency: context.currency
         }
       };
     }
+    
+    // Atomically increment budget NOW (before returning)
+    storage.incrementBudget(budgetKey, context.amount);
+    const newSpent = storage.getBudget(budgetKey) || 0;
+    const newRemaining = limit.amount - newSpent;
+    
+    // Return remaining budget info for this specific check
+    return {
+      allowed: true,
+      remaining: {
+        period: newRemaining,
+        currency: context.currency
+      }
+    };
   }
 
   // Check time constraints
