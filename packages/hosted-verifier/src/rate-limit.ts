@@ -96,4 +96,60 @@ export class RateLimiter {
       monthly: { used: monthlyUsed, limit: 0 }
     };
   }
+  
+  /**
+   * Check IP-based rate limits (backstop for keyless requests)
+   */
+  async checkIPLimit(
+    ip: string,
+    limits: { perMinute: number; perHour: number }
+  ): Promise<{
+    allowed: boolean;
+    reason?: string;
+    resetTime?: number;
+  }> {
+    const now = Date.now();
+    const minuteKey = `ip:${ip}:minute:${Math.floor(now / (60 * 1000))}`;
+    const hourKey = `ip:${ip}:hour:${Math.floor(now / (60 * 60 * 1000))}`;
+    
+    // Check current usage
+    const [minuteUsageStr, hourUsageStr] = await Promise.all([
+      this.kv.get(minuteKey),
+      this.kv.get(hourKey)
+    ]);
+    
+    const minuteUsage = parseInt(minuteUsageStr || '0');
+    const hourUsage = parseInt(hourUsageStr || '0');
+    
+    // Check per-minute limit
+    if (minuteUsage >= limits.perMinute) {
+      return {
+        allowed: false,
+        reason: `IP rate limit exceeded: ${limits.perMinute} requests per minute`,
+        resetTime: Math.floor((Math.floor(now / (60 * 1000)) + 1) * 60)
+      };
+    }
+    
+    // Check per-hour limit
+    if (hourUsage >= limits.perHour) {
+      return {
+        allowed: false,
+        reason: `IP rate limit exceeded: ${limits.perHour} requests per hour`,
+        resetTime: Math.floor((Math.floor(now / (60 * 60 * 1000)) + 1) * 3600)
+      };
+    }
+    
+    // Increment counters
+    const newMinuteUsage = minuteUsage + 1;
+    const newHourUsage = hourUsage + 1;
+    
+    await Promise.all([
+      this.kv.put(minuteKey, newMinuteUsage.toString(), { expirationTtl: 120 }), // 2 minutes TTL
+      this.kv.put(hourKey, newHourUsage.toString(), { expirationTtl: 7200 }) // 2 hours TTL
+    ]);
+    
+    return {
+      allowed: true
+    };
+  }
 }

@@ -13,6 +13,25 @@
             <p class="subtitle">Validate agent authorization tokens</p>
         </header>
 
+        <!-- Global Configuration -->
+        <section class="global-config">
+            <label for="global-api-url">
+                <strong>⚙️ Verifier API</strong>
+            </label>
+            <select id="api-mode" class="api-mode-selector">
+                <option value="local">Local (localhost:3000)</option>
+                <option value="hosted">Hosted (verifier.agentoauth.org)</option>
+                <option value="custom">Custom URL</option>
+            </select>
+            <input 
+                type="text" 
+                id="global-api-url" 
+                value="http://localhost:3000"
+                placeholder="Enter API URL"
+            >
+            <small class="field-hint">This URL is used across all tabs</small>
+        </section>
+
         <main>
             <div class="tabs">
                 <button class="tab-btn active" data-tab="policy-builder">⚙️ Policy Builder</button>
@@ -240,16 +259,6 @@
                 ></textarea>
 
                 <div class="options">
-                    <label for="api-url">
-                        <strong>Verifier API URL</strong>
-                    </label>
-                    <input 
-                        type="text" 
-                        id="api-url" 
-                        value="http://localhost:3000"
-                        placeholder="http://localhost:3000"
-                    >
-
                     <label for="audience">
                         <strong>Expected Audience</strong> <span class="label-badge optional">Optional</span>
                     </label>

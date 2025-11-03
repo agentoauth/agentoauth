@@ -37,8 +37,23 @@ app.get('/health', (c) => {
     status: 'ok',
     service: 'agentoauth-verifier',
     version: '0.7.0',
-    build: '2025-10-31',
-    features: ['act.v0.2', 'policy-eval', 'stateful-budgets', 'receipts'],
+    build: '2025-11-02',
+    features: [
+      'act.v0.2', 
+      'policy-eval', 
+      'stateful-budgets', 
+      'receipts', 
+      'keyless-free-tier',  // NEW: API key optional
+      'ip-rate-limiting'    // NEW: IP-based backstop
+    ],
+    api_key_optional: true,  // NEW: X-API-Key is optional
+    free_tier: {
+      enabled: true,
+      limits: {
+        per_issuer: '1,000/day, 10,000/month',
+        per_ip: '60/minute, 1,000/hour'
+      }
+    },
     endpoints: {
       verify: 'POST /verify',
       simulate: 'POST /simulate',
@@ -100,7 +115,15 @@ app.get('/terms', (c) => {
   
   <h2>2. Rate Limits and Quotas</h2>
   <ul>
-    <li><span class="highlight">Free Tier:</span> 1,000 verifications/day, 10,000/month</li>
+    <li><span class="highlight">Free Tier (No API Key Required):</span>
+      <ul>
+        <li>1,000 verifications/day per token issuer (iss)</li>
+        <li>10,000 verifications/month per token issuer</li>
+        <li>60 requests/minute per IP address</li>
+        <li>1,000 requests/hour per IP address</li>
+      </ul>
+    </li>
+    <li>API keys are optional - you can start using the service immediately</li>
     <li>Requests exceeding quota will be rejected with HTTP 429</li>
     <li>Service is subject to fair use policies</li>
   </ul>
@@ -130,52 +153,106 @@ app.get('/terms', (c) => {
   return c.html(html);
 });
 
-// Main verification endpoint with API key auth
+// Main verification endpoint (API key optional for free tier)
 app.post('/verify', async (c) => {
   const startTime = Date.now();
   let statusCode = 200;
   let errorCode: string | undefined;
-  let orgId = '';
-  let orgName = '';
+  let tenantId = '';
+  let tenantName = '';
+  let tier: 'free' | 'pro' | 'enterprise' = 'free';
+  let quotas = { daily: 1000, monthly: 10000 }; // Default free tier quotas
   let tokenPayload: any = undefined;
   
   try {
-    // 1. Extract API key
+    // 1. Extract and parse request body early (needed for both keyless and API key flows)
+    const body = await c.req.json();
+    const { token, audience } = body;
+    
+    if (!token) {
+      statusCode = 400;
+      errorCode = 'MISSING_TOKEN';
+      return c.json({
+        error: 'Token required',
+        code: 'MISSING_TOKEN',
+        suggestion: 'Include token in request body'
+      }, 400);
+    }
+    
+    // 2. Extract API key (OPTIONAL)
     const apiKeyHeader = c.req.header('X-API-Key') || c.req.header('Authorization')?.replace('Bearer ', '');
-    if (!apiKeyHeader) {
-      statusCode = 401;
-      return c.json({
-        error: 'API key required',
-        code: 'MISSING_API_KEY',
-        suggestion: 'Include X-API-Key header or Authorization: Bearer <api-key>',
-        docs: 'https://verifier.agentoauth.org/terms'
-      }, 401);
+    
+    if (apiKeyHeader) {
+      // API KEY PROVIDED: Use existing authenticated flow
+      const publicKey = await loadApiKeyPublicKey(c.env.API_KEY_PUBLIC_KEY);
+      const apiKeyResult = await verifyApiKey(apiKeyHeader, publicKey);
+      
+      if (!apiKeyResult.valid) {
+        statusCode = 401;
+        errorCode = 'INVALID_API_KEY';
+        return c.json({
+          error: 'Invalid API key',
+          code: 'INVALID_API_KEY',
+          details: apiKeyResult.error,
+          suggestion: 'Check your API key format and expiration'
+        }, 401);
+      }
+      
+      tenantId = apiKeyResult.payload!.sub;
+      tenantName = apiKeyResult.payload!.name;
+      tier = apiKeyResult.payload!.tier;
+      quotas = apiKeyResult.payload!.quotas;
+    } else {
+      // KEYLESS (FREE TIER): Extract tenant from token issuer
+      try {
+        const { payload } = decode(token);
+        
+        if (!payload.iss) {
+          statusCode = 400;
+          return c.json({
+            error: 'Token must have iss (issuer) claim',
+            code: 'MISSING_ISSUER',
+            suggestion: 'Ensure your token includes an iss claim identifying the token issuer',
+            docs: 'https://github.com/agentoauth/agentoauth/blob/main/SPEC.md'
+          }, 400);
+        }
+        
+        tenantId = payload.iss; // e.g., "wallet.alice.com"
+        tenantName = `Free: ${payload.iss}`;
+        tier = 'free';
+        // Keep default free tier quotas
+      } catch (decodeError) {
+        statusCode = 400;
+        return c.json({
+          error: 'Failed to decode token',
+          code: 'INVALID_TOKEN',
+          suggestion: 'Ensure token is a valid JWT format'
+        }, 400);
+      }
     }
     
-    // 2. Verify API key
-    const publicKey = await loadApiKeyPublicKey(c.env.API_KEY_PUBLIC_KEY);
-    const apiKeyResult = await verifyApiKey(apiKeyHeader, publicKey);
-    
-    if (!apiKeyResult.valid) {
-      statusCode = 401;
-      errorCode = 'INVALID_API_KEY';
-      return c.json({
-        error: 'Invalid API key',
-        code: 'INVALID_API_KEY',
-        details: apiKeyResult.error,
-        suggestion: 'Check your API key format and expiration'
-      }, 401);
-    }
-    
-    orgId = apiKeyResult.payload!.sub;
-    orgName = apiKeyResult.payload!.name;
-    
-    // 3. Check rate limits
+    // 3. IP-based rate limiting (backstop for all requests, especially keyless)
+    const clientIP = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For')?.split(',')[0]?.trim() || 'unknown';
     const rateLimiter = new RateLimiter(c.env.RATE_LIMIT_KV);
-    const limitResult = await rateLimiter.checkLimit(
-      apiKeyResult.payload!.sub, 
-      apiKeyResult.payload!.quotas
-    );
+    
+    const ipLimit = await rateLimiter.checkIPLimit(clientIP, {
+      perMinute: 60,
+      perHour: 1000
+    });
+    
+    if (!ipLimit.allowed) {
+      statusCode = 429;
+      errorCode = 'IP_RATE_LIMIT';
+      return c.json({
+        error: ipLimit.reason,
+        code: 'IP_RATE_LIMIT',
+        suggestion: 'Slow down your request rate or distribute requests across time',
+        resetTime: ipLimit.resetTime
+      }, 429);
+    }
+    
+    // 4. Check tenant-specific rate limits (by tenantId from API key or iss)
+    const limitResult = await rateLimiter.checkLimit(tenantId, quotas);
     
     if (!limitResult.allowed) {
       statusCode = 429;
@@ -188,23 +265,14 @@ app.post('/verify', async (c) => {
       return c.json({
         error: limitResult.error,
         code: 'QUOTA_EXCEEDED',
-        suggestion: 'Upgrade your plan or wait for quota reset',
-        resetTime: limitResult.resetTime
+        tier: tier,
+        quotas: quotas,
+        suggestion: tier === 'free' 
+          ? 'Free tier limit reached. Wait for quota reset or contact us for higher tiers.'
+          : 'Quota exceeded. Wait for reset or upgrade your plan.',
+        resetTime: limitResult.resetTime,
+        docs: 'https://verifier.agentoauth.org/terms'
       }, 429);
-    }
-    
-    // 4. Extract and verify token
-    const body = await c.req.json();
-    const { token, audience } = body;
-    
-    if (!token) {
-      statusCode = 400;
-      errorCode = 'MISSING_TOKEN';
-      return c.json({
-        error: 'Token required',
-        code: 'MISSING_TOKEN',
-        suggestion: 'Include token in request body'
-      }, 400);
     }
     
     // 5. Verify AgentOAuth token (simplified for Workers environment)
@@ -443,19 +511,20 @@ app.post('/verify', async (c) => {
     }, 500);
   } finally {
     // 8. Log for audit (privacy-first) - always log, even on errors
-    if (orgId) {
+    if (tenantId) {
       try {
         const auditLogger = new AuditLogger(c.env.AUDIT_LOGS_R2, c.env.AUDIT_SALT);
         const responseTime = Date.now() - startTime;
         
         await auditLogger.logVerification({
-          orgId,
-          orgName,
+          orgId: tenantId,  // tenantId can be from API key or iss
+          orgName: tenantName,
           request: c.req.raw,
           statusCode,
           responseTime,
           tokenPayload,
-          errorCode
+          errorCode,
+          tier
         });
       } catch (auditError) {
         // Don't let audit failures break the response
@@ -754,5 +823,8 @@ app.notFound((c) => {
     docs: 'https://verifier.agentoauth.org/terms'
   }, 404);
 });
+
+// Export Durable Object class for Cloudflare Workers
+export { PolicyState } from './policy-state.js';
 
 export default app;

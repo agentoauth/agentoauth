@@ -40,7 +40,7 @@ jobs:
       
       - name: Run tests
         run: pnpm test
-      
+
       - name: Run E2E policy tests
         run: |
           cd packages/examples

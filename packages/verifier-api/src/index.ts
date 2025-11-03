@@ -272,8 +272,8 @@ app.post('/verify', async (c) => {
         return c.json({
           valid: false,
           error: 'Token replay detected - token already used',
-          code: 'REPLAY'
-        });
+            code: 'REPLAY'
+          });
       }
     }
 
@@ -348,19 +348,19 @@ app.post('/revoke', async (c) => {
     
     // Support revoking by jti or policy_id
     if (jti && typeof jti === 'string') {
-      console.log(`🚫 Revoking token: ${jti}`);
-      const wasRevoked = revokeToken(jti);
-      
-      if (!wasRevoked) {
-        console.info('ℹ️  Token already revoked:', jti);
-      }
-      
-      return c.json({
-        success: true,
-        jti,
-        revokedAt: new Date().toISOString(),
-        alreadyRevoked: !wasRevoked
-      });
+    console.log(`🚫 Revoking token: ${jti}`);
+    const wasRevoked = revokeToken(jti);
+    
+    if (!wasRevoked) {
+      console.info('ℹ️  Token already revoked:', jti);
+    }
+    
+    return c.json({
+      success: true,
+      jti,
+      revokedAt: new Date().toISOString(),
+      alreadyRevoked: !wasRevoked
+    });
     } else if (policy_id && typeof policy_id === 'string') {
       console.log(`🚫 Revoking policy: ${policy_id}`);
       const wasRevoked = revokePolicy(policy_id);

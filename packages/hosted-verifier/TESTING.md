@@ -10,17 +10,29 @@ wrangler dev  # Start local dev server
 
 In another terminal, run test commands against `http://localhost:8787`.
 
+## 🎉 Keyless Testing (No API Key Required!)
+
+**Good news**: API keys are OPTIONAL! You can test all verification endpoints immediately without generating keys.
+
+**Free Tier Limits**:
+- 1,000 verifications/day per token issuer (`iss` claim)
+- 10,000 verifications/month per issuer
+- 60 requests/minute per IP
+- 1,000 requests/hour per IP
+
 ## Test Data Setup
 
-### Generate Test Keys
+### Generate Test Keys (Optional for Higher Quotas)
 
 ```bash
 pnpm run gen-keys
 ```
 
 This generates:
-- API key signing keypair
-- Demo API key for testing
+- API key signing keypair (for the verifier operator)
+- Demo API key for testing with higher quotas
+
+**Note**: This is only needed if you want to test the API key flow or need higher rate limits. For basic testing, skip this step!
 
 ### Create Test Policy
 
@@ -48,9 +60,47 @@ This generates:
 
 ### Create Test Token
 
-Use the SDK or Playground to create an `act.v0.2` token with the policy embedded.
+**Option 1: Using SDK (Recommended)**
+
+```bash
+cd /path/to/agentoauth/packages/examples
+node issue-with-policy.js
+```
+
+Copy the token from the output.
+
+**Option 2: Using Playground (Local Verifier Only)**
+
+1. Start local verifier:
+   ```bash
+   cd packages/verifier-api
+   pnpm dev  # Runs on localhost:3000
+   ```
+
+2. Start playground:
+   ```bash
+   cd packages/playground
+   python3 -m http.server 8080
+   ```
+
+3. Open http://localhost:8080
+4. Ensure "Local (localhost:3000)" is selected in the API dropdown
+5. Go to Policy Builder tab
+6. Fill in the form or load a template
+7. Click "Build Policy JSON"
+8. Click "Create Token with Policy"
+9. Copy the token from the output
+
+**Note**: The hosted verifier (verifier.agentoauth.org) does NOT support token creation - it only verifies tokens. Use the local verifier or SDK to create test tokens.
 
 ## Test Scenarios
+
+**💡 Pro Tip**: All examples below show the `-H "X-API-Key: ak_demo_..."` header, but it's **OPTIONAL**! 
+
+- **Keyless (Free Tier)**: Remove the X-API-Key header → works immediately
+- **With API Key**: Include the header → get higher quotas
+
+Choose whichever fits your testing needs!
 
 ### 1. Policy Linting
 
@@ -383,7 +433,7 @@ curl -X POST http://localhost:8787/verify \
 
 ### 12. Error Handling
 
-**Test**: Missing API key
+**Test**: Keyless verification (no API key) ✨
 
 ```bash
 curl -X POST http://localhost:8787/verify \
@@ -391,13 +441,14 @@ curl -X POST http://localhost:8787/verify \
   -d @request.json
 ```
 
-**Expected**: `401 Unauthorized` with `code: "MISSING_API_KEY"`.
+**Expected**: `200 OK` - Works perfectly! Token `iss` used for rate limiting.
 
-**Test**: Invalid API key
+**Test**: Invalid API key (when provided)
 
 ```bash
 curl -X POST http://localhost:8787/verify \
   -H "X-API-Key: invalid_key" \
+  -H "Content-Type: application/json" \
   -d @request.json
 ```
 

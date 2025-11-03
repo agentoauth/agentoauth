@@ -7,15 +7,15 @@ compatibility_flags = ["nodejs_compat"]
 [env.development]
 name = "agentoauth-verifier-dev"
 
-# KV namespace for development (create with: wrangler kv:namespace create "RATE_LIMIT_KV")
+# KV namespace for development (create with: wrangler kv namespace create RATE_LIMIT_KV)
 [[env.development.kv_namespaces]]
 binding = "RATE_LIMIT_KV" 
-id = "9e574bf949bd435da4b95cf8dd3471ca"  # Preview KV namespace ID
+id = "3a4e0e4638394578b8a432f90a719741"  # Preview KV namespace ID
 
 # Durable Objects for development
 [env.development.durable_objects]
 bindings = [
-  { name = "POLICY_STATE", class_name = "PolicyState", script_name = "agentoauth-verifier" }
+  { name = "POLICY_STATE", class_name = "PolicyState" }
 ]
 
 [[env.development.migrations]]
@@ -32,11 +32,11 @@ compatibility_flags = ["nodejs_compat"]
 pattern = "verifier.agentoauth.org/*"
 zone_name = "agentoauth.org"
 
-# KV namespace for rate limiting (create with: wrangler kv:namespace create "RATE_LIMIT_KV")
+# KV namespace for rate limiting (create with: wrangler kv namespace create RATE_LIMIT_KV)
 [[env.production.kv_namespaces]]
 binding = "RATE_LIMIT_KV" 
-id = "5bd6c83129b74f0081cd20ac55c6f6e5" # Replace with actual KV namespace ID
-preview_id = "9e574bf949bd435da4b95cf8dd3471ca"  # Replace with actual preview KV namespace ID
+id = "5c58aa1e80594bd6b815f5dcb53eb8f7" # Replace with actual KV namespace ID
+preview_id = "3a4e0e4638394578b8a432f90a719741"  # Replace with actual preview KV namespace ID
 
 # R2 bucket for audit logs (create with: wrangler r2 bucket create agentoauth-audit-logs)
 [[env.production.r2_buckets]]
@@ -46,7 +46,7 @@ bucket_name = "agentoauth-audit-logs"
 # Durable Objects
 [env.production.durable_objects]
 bindings = [
-  { name = "POLICY_STATE", class_name = "PolicyState", script_name = "agentoauth-verifier" }
+  { name = "POLICY_STATE", class_name = "PolicyState" }
 ]
 
 # Durable Object migrations

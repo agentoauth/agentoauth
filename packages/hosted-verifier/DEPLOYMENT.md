@@ -3,10 +3,15 @@
 ## Prerequisites
 
 - Cloudflare account with Workers plan ($5/month)
-- `wrangler` CLI installed and authenticated
+- `wrangler` CLI v4.0+ installed and authenticated
 - Domain configured in Cloudflare (e.g., `agentoauth.org`)
 - Node.js 18+ and pnpm installed
 - GitHub repository (for CI/CD)
+
+**Note**: Wrangler v4 is required for Durable Objects. Upgrade with:
+```bash
+pnpm install  # Installs wrangler@^4.0.0
+```
 
 ## Local Development Setup
 
@@ -46,16 +51,56 @@ You should see:
 }
 ```
 
-## Deployment to Production
+## Automated Deployment (Recommended)
+
+The fastest way to deploy is using the automated deployment script:
+
+### Prerequisites
+- Wrangler CLI authenticated (`wrangler login`)
+- Generated keys (`pnpm run gen-keys`)
+
+### Steps
+
+```bash
+cd packages/hosted-verifier
+
+# 1. Generate keys (auto-creates .env.local)
+pnpm run gen-keys
+
+# 2. Run automated deployment
+pnpm run deploy:auto
+```
+
+The script will:
+1. Check wrangler authentication
+2. Load secrets from .env.local
+3. Create KV namespaces automatically
+4. Update wrangler.toml with IDs
+5. Create R2 bucket (if needed)
+6. Set all Cloudflare secrets
+7. Deploy to production
+8. Verify deployment
+
+**That's it!** Your verifier is deployed.
+
+---
+
+## Manual Deployment
+
+If you prefer manual control, follow these steps:
 
 ### 1. Create Cloudflare Resources
 
 ```bash
 # Create KV namespace for rate limiting and storage
-wrangler kv:namespace create "RATE_LIMIT_KV" --env production
-wrangler kv:namespace create "RATE_LIMIT_KV" --env production --preview
+wrangler kv namespace create RATE_LIMIT_KV
 
-# Create R2 bucket for audit logs
+# The command above will output the production namespace ID.
+# Copy the ID and update wrangler.toml
+# For preview namespace (for wrangler dev), create separately:
+wrangler kv namespace create RATE_LIMIT_KV_PREVIEW
+
+# Create R2 bucket for audit logs (optional)
 wrangler r2 bucket create agentoauth-audit-logs
 
 # Update wrangler.toml with the IDs returned above
@@ -352,8 +397,7 @@ wrangler deploy --env production
 
 Verify KV namespaces are created and bound:
 ```bash
-wrangler kv:namespace list
-wrangler kv:namespace list --env production
+wrangler kv namespace list
 ```
 
 ### High Latency

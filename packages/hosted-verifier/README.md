@@ -4,78 +4,100 @@ Production-ready hosted verifier service to remove self-hosting friction from Ag
 
 ## 🌟 Features
 
-- **🔑 API Key Authentication** - JWT-based API keys with organization quotas
-- **📊 Rate Limiting** - Per-organization daily/monthly limits with Redis/KV storage
+- **🎉 Keyless Free Tier** - No API key needed! Start verifying tokens immediately
+- **🔑 Optional API Keys** - JWT-based API keys for higher quotas and tracking
+- **📊 Smart Rate Limiting** - Per-issuer (iss) and per-IP limits to prevent abuse
 - **🔒 Privacy-First Audit Logs** - Hash PII, store only necessary data for analytics
 - **⚡ Global Edge Deployment** - Cloudflare Workers for <50ms verification worldwide
 - **📈 Usage Analytics** - Real-time quota monitoring and usage tracking
 - **🛡️ Production Ready** - CORS, error handling, monitoring, and alerting
 
+## 🔐 Why This Two-Layer System Matters
+
+AgentOAuth verification creates a **cryptographic audit trail** that's fundamentally different from traditional OAuth:
+
+### Traditional OAuth
+```
+User → Grant Access → App gets token → App uses token
+```
+*Problem*: Only proves access was granted, not intent for specific actions.
+
+### AgentOAuth (Intent + Verification)
+```
+User → Agent signs intent (policy) → Verifier signs decision → Merchant enforces
+```
+
+### The Two Signatures
+
+1. **Intent Layer (Agent's Signature)**
+   - Agent creates consent token with policy: `{"policy": {...}, "exp": ..., "jti": ...}`
+   - Signed by agent's key: `<agent-signature>`
+   - Proves: "This agent was authorized by the user to perform this specific action"
+
+2. **Verification Layer (Verifier's Signature)**  
+   - Verifier evaluates policy and signs decision: `{"decision": "ALLOW", ...}`
+   - Signed by verifier's key: `<verifier-signature>`
+   - Proves: "A trusted third party verified and approved this request"
+
+### Why It Matters
+
+**If either side cheats or gets hacked, it's detectable.**
+
+A merchant or auditor can:
+1. ✅ **Check the agent's token** → "Was this really authorized by the user/agent?"
+2. ✅ **Check the verifier's receipt** → "Did a trusted verifier actually approve this request?"
+
+### Cryptographic Audit Trail
+
+Every transaction has two independent, verifiable proofs:
+- **Intent**: Agent's signature on the policy
+- **Verification**: Verifier's signature on the decision
+
+This dual-signature model means:
+- Rogue agents can't forge authorization (missing user delegation)
+- Compromised verifiers can't approve without valid agent tokens
+- Merchants have cryptographic proof for compliance and audits
+- Every action is traceable to both the authorizing agent AND the verifying party
+
+**That's what makes AgentOAuth different** — it doesn't just grant access, it **proves intent and verification**.
+
 ## 🚀 Quick Start
 
-### Prerequisites
+### Automated Deployment (2 Commands)
 
-- Cloudflare account with Workers plan ($5/month)
-- Domain configured in Cloudflare (e.g., `agentoauth.org`)
-- `wrangler` CLI installed and authenticated
-
-### 1. Generate Keys
+The fastest way to deploy:
 
 ```bash
 cd packages/hosted-verifier
-npm run gen-keys
+
+# 1. Generate keys (auto-creates .env.local)
+pnpm run gen-keys
+
+# 2. Deploy automatically
+pnpm run deploy:auto
 ```
 
-This generates:
-- EdDSA keypair for API key signing
-- Demo API key for testing
-- Deployment commands
+That's it! The gen-keys script creates `.env.local` automatically, and deploy:auto handles everything else (KV creation, configuration, secrets, deployment).
 
-### 2. Set Up Cloudflare Resources
+---
 
-```bash
-# Create KV namespace for rate limiting
-wrangler kv:namespace create "RATE_LIMIT_KV" --env production
-wrangler kv:namespace create "RATE_LIMIT_KV" --env production --preview
+### Manual Deployment
 
-# Create R2 bucket for audit logs
-wrangler r2 bucket create agentoauth-audit-logs
-```
-
-### 3. Configure Secrets
-
-```bash
-# Set API key public key (from gen-keys output)
-wrangler secret put API_KEY_PUBLIC_KEY --env production
-
-# Set audit salt for PII hashing
-wrangler secret put AUDIT_SALT --env production
-```
-
-### 4. Update Configuration
-
-Edit `wrangler.toml` and replace:
-- `your-kv-namespace-id` with actual KV namespace ID
-- `your-preview-kv-id` with actual preview KV namespace ID
-- Verify `zone_name` matches your domain
-
-### 5. Deploy
-
-```bash
-# Deploy to production
-wrangler deploy --env production
-
-# Verify deployment
-curl https://verifier.agentoauth.org/health
-```
+For step-by-step control, see [DEPLOYMENT.md](DEPLOYMENT.md).
 
 ## 📋 API Endpoints
 
-### Authentication
+### Authentication (Optional!)
 
-All endpoints except `/health`, `/terms`, and `/.well-known/jwks.json` require an API key.
+**Good news**: API keys are OPTIONAL! You can start using the service immediately without signing up.
 
-Include API key in requests:
+**Free Tier Limits** (no API key needed):
+- 1,000 verifications/day per token issuer (`iss` claim)
+- 10,000 verifications/month per issuer
+- 60 requests/minute per IP address
+- 1,000 requests/hour per IP address
+
+**For Higher Quotas**: Include an API key:
 ```bash
 # Option 1: X-API-Key header (recommended)
 curl -H "X-API-Key: ak_your_api_key_here" ...
@@ -100,8 +122,21 @@ Public keys for token verification (JWKS format).
 curl https://verifier.agentoauth.org/.well-known/jwks.json
 ```
 
-#### `POST /verify` 🔑
+#### `POST /verify`
 Verify AgentOAuth tokens with rate limiting and audit logging.
+
+**No API key required!** Just send the token:
+
+```bash
+curl -X POST https://verifier.agentoauth.org/verify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "eyJhbGciOiJFZERTQSI...",
+    "audience": "merchant.example"
+  }'
+```
+
+**With API key** (for higher quotas):
 
 ```bash
 curl -X POST https://verifier.agentoauth.org/verify \

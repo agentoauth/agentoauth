@@ -39,6 +39,52 @@ header h1 {
     opacity: 0.9;
 }
 
+.global-config {
+    background: #f8f9fa;
+    padding: 1rem 2rem;
+    border-bottom: 2px solid #e0e0e0;
+    display: grid;
+    grid-template-columns: auto 250px 1fr;
+    gap: 1rem;
+    align-items: center;
+}
+
+.global-config label {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.api-mode-selector {
+    padding: 0.5rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    background: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.api-mode-selector:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.global-config input[type="text"] {
+    padding: 0.5rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+}
+
+.global-config input[type="text"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+.global-config .field-hint {
+    grid-column: 2 / 4;
+    margin-top: -0.5rem;
+}
+
 main {
     padding: 2rem;
 }

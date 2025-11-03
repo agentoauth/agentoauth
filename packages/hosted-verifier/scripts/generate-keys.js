@@ -8,6 +8,7 @@
  */
 
 import { generateKeyPair, exportJWK, SignJWT } from 'jose';
+import chalk from 'chalk';
 
 async function generateKeys() {
   console.log('🔑 Generating AgentOAuth Hosted Verifier Keys\n');
@@ -18,6 +19,10 @@ async function generateKeys() {
   
   const privateJWK = await exportJWK(privateKey);
   const publicJWK = await exportJWK(publicKey);
+  
+  // Add algorithm to JWKs
+  privateJWK.alg = 'EdDSA';
+  publicJWK.alg = 'EdDSA';
   
   console.log('✅ Keypair generated\n');
   
@@ -83,11 +88,39 @@ async function generateKeys() {
   console.log(`curl -X GET https://verifier.agentoauth.org/usage \\
   -H "X-API-Key: ${demoApiKey}"`);
   
+  // Generate receipt signing keys
+  console.log('\n3️⃣ Generating receipt signing keys...');
+  const { privateKey: receiptPrivateKey, publicKey: receiptPublicKey } = await generateKeyPair('EdDSA');
+  
+  const receiptPrivateJWK = await exportJWK(receiptPrivateKey);
+  const receiptPublicJWK = await exportJWK(receiptPublicKey);
+  
+  receiptPrivateJWK.alg = 'EdDSA';
+  receiptPublicJWK.alg = 'EdDSA';
+  
+  const receiptKid = `receipt-key-${Date.now()}`;
+  
+  console.log('✅ Receipt signing keys generated\n');
+  
+  console.log('📋 Receipt Signing Keys:');
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  
+  console.log('\n🔒 Receipt Private Key (set as SIGNING_PRIVATE_KEY secret):');
+  console.log('wrangler secret put SIGNING_PRIVATE_KEY --env production');
+  console.log('Enter this value when prompted:');
+  console.log(JSON.stringify(receiptPrivateJWK));
+  
+  console.log('\n🆔 Receipt Key ID (set as SIGNING_KID secret):');
+  console.log('wrangler secret put SIGNING_KID --env production');
+  console.log('Enter this value when prompted:');
+  console.log(receiptKid);
+  
   console.log('\n🚀 Deployment Steps:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.log('1. Set up Cloudflare domain and KV/R2 resources');
-  console.log('2. Set API key secrets using the commands above');
+  console.log('2. Set all 4 secrets using the commands above');
   console.log('3. Generate audit salt: wrangler secret put AUDIT_SALT --env production');
+  console.log('   Enter a random string like: agentoauth-audit-salt-' + Date.now());
   console.log('4. Update wrangler.toml with your actual KV namespace ID');
   console.log('5. Deploy: wrangler deploy --env production');
   console.log('6. Test with the demo API key above');
@@ -100,6 +133,42 @@ async function generateKeys() {
   console.log('• Use different keys for production vs development');
   
   console.log('\n✅ Setup complete! Ready to deploy hosted verifier.\n');
+  
+  // Step 4: Generate .env.local file
+  console.log('4️⃣ Generating .env.local file...');
+  
+  const envContent = `# Cloudflare Workers Secrets (Auto-generated)
+# DO NOT commit this file to git!
+# Generated: ${new Date().toISOString()}
+
+# API Key Public Key (for verifying API keys)
+API_KEY_PUBLIC_KEY=${JSON.stringify(publicJWK)}
+
+# Audit Salt (for hashing PII in logs)
+AUDIT_SALT=agentoauth-audit-salt-${Date.now()}
+
+# Receipt Signing Private Key (for signing JWS receipts)
+SIGNING_PRIVATE_KEY=${JSON.stringify(receiptPrivateJWK)}
+
+# Receipt Signing Key ID
+SIGNING_KID=${receiptKid}
+`;
+  
+  const { writeFile } = await import('fs/promises');
+  const { join } = await import('path');
+  const { fileURLToPath } = await import('url');
+  const { dirname } = await import('path');
+  
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
+  const envPath = join(__dirname, '..', '.env.local');
+  
+  await writeFile(envPath, envContent, 'utf-8');
+  
+  console.log(chalk.green('✅ .env.local created with all secrets\n'));
+  
+  console.log(chalk.bold.yellow('🚀 Ready to Deploy!\n'));
+  console.log(chalk.gray('Run: pnpm run deploy:auto\n'));
 }
 
 generateKeys().catch(console.error);

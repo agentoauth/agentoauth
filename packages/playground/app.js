@@ -1,5 +1,6 @@
 const tokenInput = document.getElementById('token-input');
-const apiUrlInput = document.getElementById('api-url');
+const globalApiUrlInput = document.getElementById('global-api-url');
+const apiModeSelect = document.getElementById('api-mode');
 const audienceInput = document.getElementById('audience');
 const verifyBtn = document.getElementById('verify-btn');
 const demoBtn = document.getElementById('demo-btn');
@@ -11,6 +12,31 @@ const resultBody = document.getElementById('result-body');
 
 // Store current jti for revocation
 let currentJti = null;
+
+// API mode selector logic
+apiModeSelect.addEventListener('change', (e) => {
+    switch(e.target.value) {
+        case 'local':
+            globalApiUrlInput.value = 'http://localhost:3000';
+            localStorage.setItem('agentoauth_playground_api_url', 'http://localhost:3000');
+            break;
+        case 'hosted':
+            globalApiUrlInput.value = 'https://verifier.agentoauth.org';
+            localStorage.setItem('agentoauth_playground_api_url', 'https://verifier.agentoauth.org');
+            // Show keyless free tier info
+            setTimeout(() => {
+                showInlineNotification(
+                    '✨ Keyless Free Tier: No API key needed! 1K verifications/day per issuer. Perfect for testing.',
+                    'success',
+                    6000
+                );
+            }, 100);
+            break;
+        case 'custom':
+            globalApiUrlInput.focus();
+            break;
+    }
+});
 
 // Inline notification system
 function showInlineNotification(message, type = 'info', duration = 3000) {
@@ -145,7 +171,7 @@ function showResult(valid, data) {
 // Verify token
 async function verifyToken() {
     const token = tokenInput.value.trim();
-    const apiUrl = apiUrlInput.value.trim();
+    const apiUrl = globalApiUrlInput.value.trim();
     const audience = audienceInput.value.trim();
     
     console.log('🔐 Verifying token...');
@@ -211,7 +237,17 @@ async function verifyToken() {
 
 // Create demo token
 async function createDemoToken() {
-    const apiUrl = apiUrlInput.value.trim();
+    const apiUrl = globalApiUrlInput.value.trim();
+    
+    // Check if it's hosted verifier
+    if (apiUrl.includes('verifier.agentoauth.org')) {
+        showInlineNotification(
+            '⚠️ Hosted verifier does not support demo token creation. Use the SDK to create tokens.',
+            'warning',
+            5000
+        );
+        return;
+    }
     
     console.log('🚀 Creating demo token...');
     console.log('📡 API URL:', apiUrl);
@@ -296,7 +332,7 @@ async function revokeToken() {
         return;
     }
     
-    const apiUrl = apiUrlInput.value.trim();
+    const apiUrl = globalApiUrlInput.value.trim();
     
     if (!confirm(`Revoke token with jti: ${currentJti}?`)) {
         return;
@@ -343,7 +379,18 @@ function loadSample() {
     console.log('📝 Loading sample:', sample);
     
     // For now, trigger demo token creation with different parameters
-    const apiUrl = apiUrlInput.value.trim();
+    const apiUrl = globalApiUrlInput.value.trim();
+    
+    // Check if it's hosted verifier
+    if (apiUrl.includes('verifier.agentoauth.org')) {
+        showInlineNotification(
+            '⚠️ Hosted verifier does not support demo token creation. Please use local verifier or create tokens with the SDK.',
+            'warning',
+            5000
+        );
+        sampleDropdown.value = '';
+        return;
+    }
     
     let sampleConfig = {
         user: 'did:example:alice',
@@ -597,11 +644,21 @@ buildPolicyBtn.addEventListener('click', () => {
 });
 
 createTokenBtn.addEventListener('click', async () => {
-    const apiUrl = apiUrlInput.value.trim();
+    const apiUrl = globalApiUrlInput.value.trim();
     const policyJson = document.getElementById('policy-json').textContent;
     
     if (!policyJson) {
-        alert('⚠️ Please click "Build Policy JSON" first');
+        showInlineNotification('⚠️ Please click "Build Policy JSON" first', 'warning');
+        return;
+    }
+    
+    // Check if it's hosted verifier
+    if (apiUrl.includes('verifier.agentoauth.org')) {
+        showInlineNotification(
+            '⚠️ Hosted verifier does not support demo token creation. Use the SDK to create tokens with policy.',
+            'warning',
+            5000
+        );
         return;
     }
     
@@ -670,7 +727,7 @@ testPolicyBtn.addEventListener('click', async () => {
     const resourceId = document.getElementById('tester-resource-id').value.trim();
     const amount = document.getElementById('tester-amount').value;
     const currency = document.getElementById('tester-currency').value.trim();
-    const apiUrl = apiUrlInput.value.trim();
+    const apiUrl = globalApiUrlInput.value.trim();
     
     if (!token) {
         alert('Please paste a token');
@@ -756,14 +813,32 @@ window.copyPolicyJson = copyPolicyJson;
 
 // Smart defaults and localStorage persistence
 (function() {
-    // Save/restore API URL
+    // Save/restore API URL and mode
     const savedApiUrl = localStorage.getItem('agentoauth_playground_api_url');
     if (savedApiUrl) {
-        apiUrlInput.value = savedApiUrl;
+        globalApiUrlInput.value = savedApiUrl;
+        
+        // Set mode selector based on saved URL
+        if (savedApiUrl === 'http://localhost:3000') {
+            apiModeSelect.value = 'local';
+        } else if (savedApiUrl === 'https://verifier.agentoauth.org') {
+            apiModeSelect.value = 'hosted';
+        } else {
+            apiModeSelect.value = 'custom';
+        }
     }
     
-    apiUrlInput.addEventListener('change', () => {
-        localStorage.setItem('agentoauth_playground_api_url', apiUrlInput.value);
+    globalApiUrlInput.addEventListener('change', () => {
+        localStorage.setItem('agentoauth_playground_api_url', globalApiUrlInput.value);
+        
+        // Update mode selector if it matches a preset
+        if (globalApiUrlInput.value === 'http://localhost:3000') {
+            apiModeSelect.value = 'local';
+        } else if (globalApiUrlInput.value === 'https://verifier.agentoauth.org') {
+            apiModeSelect.value = 'hosted';
+        } else {
+            apiModeSelect.value = 'custom';
+        }
     });
     
     // Auto-generate Policy ID on blur if empty
