@@ -49,6 +49,7 @@ jobs:
           NODE_ENV: test
       
       - name: Run Cloudflare Workers E2E tests
+        if: matrix.node-version == '20.x'  # Wrangler v4 requires Node 20+
         timeout-minutes: 5
         run: |
           cd packages/hosted-verifier
