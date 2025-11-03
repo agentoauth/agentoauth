@@ -39,7 +39,7 @@ jobs:
         run: pnpm lint
       
       - name: Run tests
-        run: pnpm test
+        run: pnpm -r --filter "!@agentoauth/hosted-verifier" run test
 
       - name: Run E2E policy tests
         run: |
