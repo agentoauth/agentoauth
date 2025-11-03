@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgentOAuth Playground</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div>
+                    <h1>AgentOAuth Playground</h1>
+                    <p class="subtitle">Build policies and test agent authorization tokens</p>
+                </div>
+                <div class="header-links">
+                    <a href="/docs" class="header-link">📖 Documentation</a>
+                    <a href="https://github.com/agentoauth/agentoauth" target="_blank" class="header-link">📦 GitHub</a>
+                </div>
+            </div>
+        </header>
+
+        <!-- Global Configuration -->
+        <section class="global-config">
+            <label for="global-api-url">
+                <strong>⚙️ Verifier API</strong>
+            </label>
+            <select id="api-mode" class="api-mode-selector">
+                <option value="local">Local (localhost:3000)</option>
+                <option value="hosted">Hosted (verifier.agentoauth.org)</option>
+                <option value="custom">Custom URL</option>
+            </select>
+            <input 
+                type="text" 
+                id="global-api-url" 
+                value="http://localhost:3000"
+                placeholder="Enter API URL"
+            >
+            <small class="field-hint">This URL is used across all tabs</small>
+        </section>
+
+        <main>
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="policy-builder">⚙️ Policy Builder</button>
+                <button class="tab-btn" data-tab="policy-tester">🧪 Policy Tester</button>
+                <button class="tab-btn" data-tab="validator">🔍 Token Validator</button>
+            </div>
+
+            <!-- Policy Builder Tab -->
+            <section class="tab-content active input-section" data-content="policy-builder">
+                <h2 class="tab-title">Policy Builder (pol.v0.2)</h2>
+                <p class="tab-description">Create structured authorization policies for programmable consent</p>
+                
+                <div class="template-selector">
+                    <label for="policy-template"><strong>📋 Load Template (optional)</strong></label>
+                    <select id="policy-template" class="template-dropdown">
+                        <option value="">-- Start from scratch --</option>
+                        <option value="travel">✈️ Travel Booking ($500/txn, $2000/week, weekdays only)</option>
+                        <option value="micropay">💸 Micro-payments ($10/txn, $100/day)</option>
+                        <option value="enterprise">🏢 Enterprise Purchase ($5000/txn, specific merchants)</option>
+                    </select>
+                    <div id="template-description" class="template-description" style="display: none;"></div>
+                </div>
+                
+                <div class="policy-form">
+                    <!-- Step 1: Basic Information -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">Step 1: Basic Information</h3>
+                        <div class="form-group">
+                            <label for="policy-id"><strong>Policy ID</strong> <span class="label-badge optional">Optional</span></label>
+                            <input type="text" id="policy-id" placeholder="pol_01HXZ8K9P4QN2M1R3T5V7W9X" value="">
+                        </div>
+                    </div>
+                    
+                    <!-- Step 2: What can the agent do? -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">Step 2: What can the agent do? ✋</h3>
+                        <div class="form-group">
+                            <label for="policy-actions"><strong>Actions</strong> <span class="label-badge required">Required</span></label>
+                            <input type="text" id="policy-actions" placeholder="payments.send,payments.review" value="payments.send">
+                            <small class="field-hint">Comma-separated list of allowed actions</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="policy-merchants"><strong>Merchants</strong> <span class="label-badge optional">Optional</span></label>
+                            <input type="text" id="policy-merchants" placeholder="airbnb,expedia,booking" value="">
+                            <small class="field-hint">Restrict to specific merchants (comma-separated)</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Step 3: Spending Limits -->
+                    <div class="form-section">
+                        <h3 class="form-section-title">Step 3: Spending Limits 💰</h3>
+                        <div class="form-group">
+                            <label for="policy-amount"><strong>Per-Transaction Limit</strong> <span class="label-badge required">Required</span></label>
+                            <div class="form-row">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <input type="number" id="policy-amount" placeholder="500" value="500">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <input type="text" id="policy-currency" placeholder="USD" value="USD" maxlength="3">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label><strong>Per-Period Budget</strong> <span class="label-badge required">Required</span></label>
+                            <div class="form-row">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <input type="number" id="policy-period-amount" placeholder="1500" value="1500">
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <select id="policy-period">
+                                        <option value="week" selected>Week</option>
+                                        <option value="day">Day</option>
+                                        <option value="month">Month</option>
+                                        <option value="hour">Hour</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <small class="field-hint">Maximum total spending over the selected time period</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Options -->
+                    <div class="form-section">
+                        <button type="button" class="toggle-section-btn" onclick="toggleAdvancedOptions()">
+                            <span class="toggle-icon">▼</span> Advanced Options
+                        </button>
+                        <div id="advanced-options" class="toggle-content" style="display: none;">
+                            <h3 class="form-section-title">🕒 Time Constraints</h3>
+                            <div class="form-group">
+                                <label><strong>Time Window</strong> <span class="label-badge optional">Optional</span></label>
+                                <small class="field-hint" style="display: block; margin-bottom: 0.5rem;">
+                                    Leave empty to allow 24/7. Fill both start and end to restrict to specific hours.
+                                </small>
+                                <div class="form-row">
+                                    <input type="text" id="policy-start" placeholder="08:00" value="">
+                                    <span style="align-self: center;">to</span>
+                                    <input type="text" id="policy-end" placeholder="20:00" value="">
+                                    <input type="text" id="policy-tz" placeholder="America/Los_Angeles" value="">
+                                </div>
+                                <small class="field-hint">Format: HH:MM (24-hour). Timezone is optional.</small>
+                            </div>
+                            
+                            <h3 class="form-section-title">🔒 Security Settings</h3>
+                            <div class="form-group">
+                                <label><input type="checkbox" id="policy-strict"> <strong>Strict Mode</strong></label>
+                                <small class="field-hint">Unknown fields in requests will result in denial</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button id="build-policy-btn" class="btn-primary">Build Policy JSON</button>
+                <button id="create-token-btn" class="btn-secondary">Create Token with Policy</button>
+                
+                <div id="policy-output" class="output-section" style="display: none; margin-top: 1rem;">
+                    <div class="result-header" style="background: #d1ecf1; color: #0c5460;">
+                        <strong>Policy JSON</strong>
+                        <button onclick="copyPolicyJson()" class="btn-copy" style="float: right; margin-top: -0.25rem;">
+                            📋 Copy Policy JSON
+                        </button>
+                    </div>
+                    <div class="result-body">
+                        <pre id="policy-json"></pre>
+                    </div>
+                </div>
+                
+                <div id="policy-token-output" class="output-section" style="display: none; margin-top: 1rem;">
+                    <div class="result-header" style="background: #d4edda; color: #155724;">
+                        <strong>✅ Token Created with Policy</strong>
+                    </div>
+                    <div class="result-body">
+                        <div style="margin-bottom: 1rem;">
+                            <strong>Token (JWS Compact):</strong>
+                            <button onclick="copyToClipboard(document.getElementById('policy-token-text').textContent, 'Token')" 
+                                    style="margin-left: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.9em; cursor: pointer;">
+                                📋 Copy
+                            </button>
+                        </div>
+                        <pre id="policy-token-text" style="background: #f8f9fa; padding: 0.5rem; overflow-x: auto; font-size: 0.75em; white-space: pre-wrap; word-break: break-all;"></pre>
+                        
+                        <div style="margin-top: 1rem;">
+                            <strong>Payload Preview:</strong>
+                        </div>
+                        <pre id="policy-token-payload" style="background: #f8f9fa; padding: 0.5rem; font-size: 0.9em;"></pre>
+                        
+                        <div style="margin-top: 1rem; padding: 1rem; background: #e7f3ff; border-left: 4px solid #0066cc; border-radius: 4px;">
+                            <strong>💡 Ready to test?</strong> Click below to test this token with policy evaluation:
+                            <button onclick="switchToPolicyTester()" class="btn-secondary" style="margin-left: 1rem;">
+                                Test This Token →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Policy Tester Tab -->
+            <section class="tab-content input-section" data-content="policy-tester">
+                <h2 class="tab-title">Policy Tester</h2>
+                <p class="tab-description">Test policy evaluation with token + request context</p>
+                
+                <div class="form-group">
+                    <label for="tester-token"><strong>Token with Policy</strong></label>
+                    <textarea id="tester-token" rows="4" placeholder="Paste a token created with Policy Builder"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tester-action"><strong>Action</strong></label>
+                    <input type="text" id="tester-action" placeholder="payments.send" value="payments.send">
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tester-resource-type"><strong>Resource Type</strong></label>
+                        <input type="text" id="tester-resource-type" placeholder="merchant" value="merchant">
+                    </div>
+                    <div class="form-group">
+                        <label for="tester-resource-id"><strong>Resource ID</strong></label>
+                        <input type="text" id="tester-resource-id" placeholder="airbnb" value="">
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="tester-amount"><strong>Amount</strong></label>
+                        <input type="number" id="tester-amount" placeholder="250" value="">
+                    </div>
+                    <div class="form-group">
+                        <label for="tester-currency"><strong>Currency</strong></label>
+                        <input type="text" id="tester-currency" placeholder="USD" value="USD">
+                    </div>
+                </div>
+                
+                <button id="test-policy-btn" class="btn-primary">Test Policy</button>
+                
+                <div id="policy-test-output" class="output-section" style="display: none; margin-top: 1rem;">
+                    <div id="policy-test-header" class="result-header"></div>
+                    <div class="result-body">
+                        <pre id="policy-test-result"></pre>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Token Validator Tab -->
+            <section class="tab-content input-section" data-content="validator">
+                <h2 class="tab-title">Token Validator</h2>
+                <p class="tab-description">Verify existing tokens and inspect their contents</p>
+                
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <label for="token-input">
+                        <strong>Paste Token (JWS Compact Format)</strong>
+                    </label>
+                    <select id="sample-tokens" class="sample-dropdown">
+                        <option value="">-- Load Sample Token --</option>
+                        <option value="valid">✅ Valid Payment Token</option>
+                        <option value="expired">❌ Expired Token</option>
+                        <option value="limit">💰 High Limit Token</option>
+                    </select>
+                </div>
+                <textarea 
+                    id="token-input" 
+                    placeholder="eyJhbGciOiJFZERTQSIsImtpZCI6ImtleS0xMjM0NTY3ODkwIiwidHlwIjoiSldUIn0..."
+                    rows="6"
+                ></textarea>
+
+                <div class="options">
+                    <label for="audience">
+                        <strong>Expected Audience</strong> <span class="label-badge optional">Optional</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="audience" 
+                        placeholder="e.g., merchant.example, api.acme.com"
+                    >
+                    <small class="field-hint">Validates that the token was issued for this specific recipient. Leave empty to skip audience validation.</small>
+                </div>
+                
+                <!-- Notification area -->
+                <div id="notification-area" style="margin: 1rem 0;"></div>
+
+                <button id="verify-btn" class="btn-primary">Verify Token</button>
+                <button id="demo-btn" class="btn-secondary">Create Demo Token</button>
+                <button id="revoke-btn" class="btn-warning">Revoke Token</button>
+                
+                <!-- Token Validator Output Section -->
+                <section class="output-section" id="output" style="display: none;">
+                    <div id="result-header" class="result-header"></div>
+                    <div id="result-body" class="result-body"></div>
+                </section>
+            </section>
+
+            <section class="info-section">
+                <h2>About AgentOAuth</h2>
+                <p>
+                    AgentOAuth is a neutral protocol that lets AI agents prove who authorized what.
+                    It uses JWS tokens with a five-field schema (user, agent, scope, limit, expiry + signature)
+                    built on OAuth/JWT patterns.
+                </p>
+                <ul>
+                    <li><strong>Spec:</strong> <a href="https://github.com/agentoauth/agentoauth" target="_blank">View Specification</a></li>
+                    <li><strong>SDK:</strong> JavaScript/TypeScript (Python coming soon)</li>
+                    <li><strong>License:</strong> MIT / Apache 2.0</li>
+                </ul>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+

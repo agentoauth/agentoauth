@@ -6,6 +6,7 @@ compatibility_flags = ["nodejs_compat"]
 # Development environment
 [env.development]
 name = "agentoauth-verifier-dev"
+assets = { directory = "./public", binding = "ASSETS" }
 
 # KV namespace for development (create with: wrangler kv namespace create RATE_LIMIT_KV)
 [[env.development.kv_namespaces]]
@@ -26,6 +27,7 @@ new_classes = ["PolicyState"]
 [env.production]
 name = "agentoauth-verifier-prod"
 compatibility_flags = ["nodejs_compat"]
+assets = { directory = "./public", binding = "ASSETS" }
 
 # Custom domain routing (update with your actual zone_name)
 [[env.production.routes]]

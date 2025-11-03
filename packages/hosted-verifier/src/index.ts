@@ -20,6 +20,7 @@ interface Env {
   POLICY_STATE: DurableObjectNamespace<PolicyState>;
   SIGNING_PRIVATE_KEY: string;
   SIGNING_KID: string;
+  ASSETS: Fetcher;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -827,4 +828,54 @@ app.notFound((c) => {
 // Export Durable Object class for Cloudflare Workers
 export { PolicyState } from './policy-state.js';
 
-export default app;
+// Custom fetch handler to serve static assets and API routes
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+    
+    // Try to serve static assets first for /docs, /play, and /
+    if (url.pathname.startsWith('/docs') || url.pathname.startsWith('/play') || url.pathname === '/') {
+      try {
+        // Check if assets binding is available
+        if (!env.ASSETS) {
+          return new Response('Static assets not configured. Run: wrangler deploy --env production', { 
+            status: 500,
+            headers: { 'Content-Type': 'text/plain' }
+          });
+        }
+        
+        // Map directory requests to index.html
+        let assetPath = url.pathname;
+        if (assetPath === '/') {
+          assetPath = '/docs/index.html';
+        } else if (assetPath === '/docs' || assetPath === '/docs/') {
+          assetPath = '/docs/index.html';
+        } else if (assetPath === '/play' || assetPath === '/play/') {
+          assetPath = '/play/index.html';
+        }
+        
+        // Create new request with updated path
+        const assetUrl = new URL(request.url);
+        assetUrl.pathname = assetPath;
+        const assetRequest = new Request(assetUrl.toString(), request);
+        
+        // Fetch from ASSETS binding
+        return await env.ASSETS.fetch(assetRequest);
+      } catch (e) {
+        // Return error details for debugging
+        return new Response(
+          `Static asset error: ${e.message}\n\n` +
+          `Requested path: ${url.pathname}\n` +
+          `Try: wrangler deploy --env production`,
+          { 
+            status: 404,
+            headers: { 'Content-Type': 'text/plain' }
+          }
+        );
+      }
+    }
+    
+    // Handle API routes with Hono
+    return app.fetch(request, env, ctx);
+  },
+};

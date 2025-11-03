@@ -1,0 +1,15 @@
+# Local environment variables
+.env.local
+.env
+
+# Wrangler
+.wrangler/
+.dev.vars
+
+# Node
+node_modules/
+dist/
+
+# Test artifacts
+test-policy.json
+

@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentOAuth - Verifiable Authorization for AI Agents</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="nav-brand">
+        <h1>AgentOAuth</h1>
+        <span class="version">v0.7</span>
+      </div>
+      <div class="nav-links">
+        <a href="/play" class="nav-link">🧪 Playground</a>
+        <a href="https://github.com/agentoauth/agentoauth" class="nav-link" target="_blank">📦 GitHub</a>
+        <a href="/health" class="nav-link">💚 Status</a>
+      </div>
+    </div>
+  </nav>
+
+  <main>
+    <!-- Hero Section -->
+    <section class="hero">
+      <h1>Verifiable Authorization for AI Agents</h1>
+      <p class="tagline">Cryptographic proof of what agents are authorized to do</p>
+      <div class="cta-buttons">
+        <a href="/play" class="btn btn-primary">Try Interactive Playground</a>
+        <a href="https://github.com/agentoauth/agentoauth" class="btn btn-secondary" target="_blank">View on GitHub</a>
+      </div>
+      <div class="hero-badge">
+        <span class="badge">🎉 No API Key Required</span>
+        <span class="badge">✅ Free Tier: 1K/day</span>
+        <span class="badge">⚡ <50ms Latency</span>
+      </div>
+    </section>
+
+    <!-- What is AgentOAuth? -->
+    <section class="content-section">
+      <h2>What is AgentOAuth?</h2>
+      <p>
+        AgentOAuth is a neutral protocol for AI agents to prove <strong>who authorized what</strong>. 
+        It provides verifiable authorization tokens with clear scope, limits, and expiration—built on 
+        OAuth/JWT patterns for maximum interoperability.
+      </p>
+      <p>
+        Unlike traditional OAuth which only proves "access was granted," AgentOAuth creates a 
+        <strong>cryptographic audit trail</strong> proving both the agent's intent and the verifier's approval.
+      </p>
+
+      <div class="comparison">
+        <div class="comparison-item">
+          <h4>Traditional OAuth</h4>
+          <div class="flow">User → Grant Access → App uses token</div>
+          <p class="problem">Problem: Only proves access, not specific intent</p>
+        </div>
+        <div class="comparison-item highlight">
+          <h4>AgentOAuth</h4>
+          <div class="flow">User → Agent signs policy → Verifier approves → Merchant enforces</div>
+          <p class="benefit">Benefit: Proves both intent AND verification</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Two-Layer System -->
+    <section class="content-section">
+      <h2>The Two-Layer Signature System</h2>
+      <p>Every AgentOAuth transaction has <strong>two independent, verifiable signatures</strong>:</p>
+
+      <div class="signatures">
+        <div class="signature-layer">
+          <div class="layer-number">1</div>
+          <h3>Intent Layer</h3>
+          <p><strong>Agent's Signature</strong></p>
+          <div class="code-preview">
+            <code>{"policy": {...}, "exp": ..., "jti": ...}</code>
+            <code class="sig">&lt;agent-signature&gt;</code>
+          </div>
+          <p>Proves: "This agent was authorized by the user to perform this specific action"</p>
+        </div>
+
+        <div class="arrow">→</div>
+
+        <div class="signature-layer">
+          <div class="layer-number">2</div>
+          <h3>Verification Layer</h3>
+          <p><strong>Verifier's Signature</strong></p>
+          <div class="code-preview">
+            <code>{"decision": "ALLOW", ...}</code>
+            <code class="sig">&lt;verifier-signature&gt;</code>
+          </div>
+          <p>Proves: "A trusted third party verified and approved this request"</p>
+        </div>
+      </div>
+
+      <div class="why-matters">
+        <h3>Why This Matters</h3>
+        <p><strong>If either side cheats or gets hacked, it's detectable.</strong></p>
+        <ul>
+          <li>✅ Merchants can check the agent's token → "Was this really authorized?"</li>
+          <li>✅ Auditors can check the verifier's receipt → "Did a trusted verifier approve?"</li>
+          <li>✅ Rogue agents can't forge authorization (missing user delegation)</li>
+          <li>✅ Compromised verifiers can't approve without valid agent tokens</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- What is a Consent Token? -->
+    <section class="content-section">
+      <h2>What is a Consent Token?</h2>
+      <p>
+        A Consent Token is a signed JWT containing the agent's authorization policy. 
+        It specifies exactly what the agent can do, with verifiable limits and constraints.
+      </p>
+
+      <div class="token-example">
+        <h4>Example Token Structure</h4>
+        <pre><code>{
+  "ver": "act.v0.2",
+  "user": "did:user:alice",
+  "agent": "did:agent:travel-assistant",
+  "scope": "payments.send",
+  "policy": {
+    "version": "pol.v0.2",
+    "id": "pol_abc123",
+    "actions": ["payments.send"],
+    "resources": [
+      {"type": "merchant", "match": {"ids": ["airbnb", "expedia"]}}
+    ],
+    "limits": {
+      "per_txn": {"amount": 500, "currency": "USD"},
+      "per_period": {"amount": 1500, "currency": "USD", "period": "week"}
+    },
+    "constraints": {
+      "time": {"start": "08:00", "end": "20:00", "tz": "UTC"}
+    }
+  },
+  "policy_hash": "sha256:3fd9...",
+  "exp": 1762140000,
+  "jti": "act_unique_id"
+}</code></pre>
+      </div>
+
+      <div class="policy-features">
+        <h4>Policy Features</h4>
+        <div class="feature-grid">
+          <div class="feature">
+            <strong>Actions</strong>
+            <p>What operations are allowed (payments.send, data.read, etc.)</p>
+          </div>
+          <div class="feature">
+            <strong>Resources</strong>
+            <p>Which merchants or endpoints can be accessed</p>
+          </div>
+          <div class="feature">
+            <strong>Limits</strong>
+            <p>Per-transaction and per-period spending caps</p>
+          </div>
+          <div class="feature">
+            <strong>Constraints</strong>
+            <p>Time windows, day-of-week restrictions, timezone aware</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Start -->
+    <section class="content-section">
+      <h2>Quick Start: Verify a Token</h2>
+      <p>No signup required! Start verifying tokens immediately:</p>
+
+      <div class="quickstart-tabs">
+        <button class="tab-btn active" onclick="showTab('curl')">cURL</button>
+        <button class="tab-btn" onclick="showTab('javascript')">JavaScript</button>
+        <button class="tab-btn" onclick="showTab('playground')">Playground</button>
+      </div>
+
+      <div class="tab-content" id="curl-tab">
+        <h4>Verify with cURL</h4>
+        <pre><code class="bash"># No API key needed!
+curl -X POST https://verifier.agentoauth.org/verify \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "eyJhbGciOiJFZERTQSI...",
+    "audience": "merchant.example"
+  }'</code></pre>
+
+        <h4>Response (Success)</h4>
+        <pre><code class="json">{
+  "valid": true,
+  "payload": {
+    "user": "did:user:alice",
+    "agent": "did:agent:travel-ai",
+    "scope": "payments.send",
+    "policy": {...}
+  },
+  "policy_decision": {
+    "allowed": true,
+    "receipt_id": "receipt_abc123",
+    "remaining": {
+      "period": 1100,
+      "currency": "USD"
+    }
+  }
+}</code></pre>
+      </div>
+
+      <div class="tab-content" id="javascript-tab" style="display: none;">
+        <h4>Verify with JavaScript SDK</h4>
+        <pre><code class="javascript">import { verify } from '@agentoauth/sdk';
+
+const result = await verify(
+  token,
+  'https://verifier.agentoauth.org/.well-known/jwks.json',
+  { audience: 'merchant.example' }
+);
+
+if (result.valid) {
+  console.log('✅ Token verified!');
+  console.log('User:', result.payload.user);
+  console.log('Policy:', result.payload.policy);
+} else {
+  console.error('❌ Verification failed:', result.error);
+}</code></pre>
+
+        <h4>Install SDK</h4>
+        <pre><code class="bash">npm install @agentoauth/sdk</code></pre>
+      </div>
+
+      <div class="tab-content" id="playground-tab" style="display: none;">
+        <h4>Interactive Playground</h4>
+        <p>Test token verification visually in your browser:</p>
+        <ol>
+          <li>Visit the <a href="/play">AgentOAuth Playground</a></li>
+          <li>Go to the "Token Validator" tab</li>
+          <li>Paste your token or load a sample</li>
+          <li>Click "Verify Token" to see the result</li>
+        </ol>
+        <a href="/play" class="btn btn-primary">Open Playground →</a>
+      </div>
+    </section>
+
+    <!-- Creating Tokens -->
+    <section class="content-section">
+      <h2>Creating Tokens</h2>
+      <p>To create AgentOAuth tokens with policies:</p>
+
+      <h4>Using the SDK (Recommended)</h4>
+      <pre><code class="javascript">import { issueConsent, buildPolicyV2 } from '@agentoauth/sdk';
+import { generateKeyPair, exportJWK } from 'jose';
+
+// 1. Create policy
+const policy = buildPolicyV2()
+  .id('pol_travel_001')
+  .actions(['payments.send'])
+  .merchants(['airbnb', 'expedia'])
+  .limitPerTxn(500, 'USD')
+  .limitPerPeriod(1500, 'USD', 'week')
+  .timeConstraints({ start: '08:00', end: '20:00', tz: 'UTC' })
+  .finalize();
+
+// 2. Generate signing keys
+const { privateKey } = await generateKeyPair('EdDSA');
+const privateJWK = await exportJWK(privateKey);
+
+// 3. Issue token
+const { token } = await issueConsent({
+  user: 'did:user:alice',
+  agent: 'did:agent:travel-ai',
+  scope: 'payments.send',
+  policy: policy,
+  privateKey: privateJWK,
+  keyId: 'key-001',
+  expiresIn: '7d'
+});
+
+console.log('Token created:', token);</code></pre>
+
+      <p class="note">
+        <strong>Note:</strong> The hosted verifier does NOT create tokens (for security). 
+        Use the SDK or run a local verifier for testing. 
+        See <a href="https://github.com/agentoauth/agentoauth/tree/main/packages/examples" target="_blank">examples/</a> for more.
+      </p>
+    </section>
+
+    <!-- Free Tier -->
+    <section class="content-section">
+      <h2>Free Tier Limits</h2>
+      <p>The hosted verifier is <strong>free to use</strong> with generous limits:</p>
+
+      <div class="limits-grid">
+        <div class="limit-card">
+          <div class="limit-number">1,000</div>
+          <div class="limit-label">Verifications/day<br>per token issuer</div>
+        </div>
+        <div class="limit-card">
+          <div class="limit-number">10,000</div>
+          <div class="limit-label">Verifications/month<br>per token issuer</div>
+        </div>
+        <div class="limit-card">
+          <div class="limit-number">60</div>
+          <div class="limit-label">Requests/minute<br>per IP address</div>
+        </div>
+        <div class="limit-card">
+          <div class="limit-number">1,000</div>
+          <div class="limit-label">Requests/hour<br>per IP address</div>
+        </div>
+      </div>
+
+      <p class="limits-note">
+        No API key required! Rate limits are enforced by token issuer (<code>iss</code> claim) 
+        and IP address. Perfect for testing, prototypes, and low-volume production use.
+      </p>
+
+      <p class="limits-upgrade">
+        Need higher limits? <a href="mailto:alpha@agentoauth.org">Contact us</a> for custom API keys with increased quotas.
+      </p>
+    </section>
+
+    <!-- API Endpoints -->
+    <section class="content-section">
+      <h2>API Endpoints</h2>
+
+      <div class="endpoints">
+        <div class="endpoint">
+          <div class="endpoint-method">POST</div>
+          <div class="endpoint-path">/verify</div>
+          <p>Verify AgentOAuth tokens with policy evaluation</p>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-method">POST</div>
+          <div class="endpoint-path">/simulate</div>
+          <p>Test policy evaluation without state changes</p>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-method">GET</div>
+          <div class="endpoint-path">/receipts/:id</div>
+          <p>Retrieve signed verification receipt</p>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-method">GET</div>
+          <div class="endpoint-path">/.well-known/jwks.json</div>
+          <p>Public keys for receipt verification</p>
+        </div>
+
+        <div class="endpoint">
+          <div class="endpoint-method">GET</div>
+          <div class="endpoint-path">/health</div>
+          <p>Service health and feature flags</p>
+        </div>
+      </div>
+
+      <p>
+        Full API documentation: 
+        <a href="https://github.com/agentoauth/agentoauth/blob/main/SPEC.md" target="_blank">SPEC.md</a>
+      </p>
+    </section>
+
+    <!-- Links -->
+    <section class="content-section">
+      <h2>Resources</h2>
+      <div class="resources-grid">
+        <a href="https://github.com/agentoauth/agentoauth" class="resource-card" target="_blank">
+          <h3>📦 GitHub Repository</h3>
+          <p>Source code, spec, and examples</p>
+        </a>
+        <a href="/play" class="resource-card">
+          <h3>🧪 Interactive Playground</h3>
+          <p>Build policies and test tokens</p>
+        </a>
+        <a href="https://www.npmjs.com/package/@agentoauth/sdk" class="resource-card" target="_blank">
+          <h3>📚 npm Package</h3>
+          <p>JavaScript/TypeScript SDK</p>
+        </a>
+        <a href="https://github.com/agentoauth/agentoauth/blob/main/SPEC.md" class="resource-card" target="_blank">
+          <h3>📖 Specification</h3>
+          <p>Protocol details and schemas</p>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-container">
+      <div class="footer-section">
+        <h4>AgentOAuth</h4>
+        <p>Verifiable authorization for AI agents</p>
+        <p class="version-info">v0.7 (Protocol: act.v0.2, Policy: pol.v0.2)</p>
+      </div>
+      <div class="footer-section">
+        <h4>Links</h4>
+        <ul>
+          <li><a href="/play">Playground</a></li>
+          <li><a href="/health">API Status</a></li>
+          <li><a href="/terms">Terms of Service</a></li>
+          <li><a href="https://github.com/agentoauth/agentoauth" target="_blank">GitHub</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Contact</h4>
+        <ul>
+          <li><a href="mailto:alpha@agentoauth.org">alpha@agentoauth.org</a></li>
+          <li><a href="https://github.com/agentoauth/agentoauth/issues" target="_blank">Report Issues</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2025 AgentOAuth. Open source under MIT License.</p>
+    </div>
+  </footer>
+
+  <script>
+    function showTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.style.display = 'none';
+      });
+      
+      // Remove active class from all buttons
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Show selected tab
+      document.getElementById(tabName + '-tab').style.display = 'block';
+      
+      // Add active class to clicked button
+      event.target.classList.add('active');
+    }
+  </script>
+</body>
+</html>
+
