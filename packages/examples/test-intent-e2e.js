@@ -48,11 +48,18 @@ function createMockIntent(policy, durationDays, expired = false) {
 // Check if verifier is running
 async function checkVerifier() {
   try {
-    const response = await fetch(`${VERIFIER_URL}/health`);
+    const response = await fetch(`${VERIFIER_URL}/health`, {
+      signal: AbortSignal.timeout(5000) // 5 second timeout
+    });
     if (response.ok) {
-      return true;
+      const data = await response.json();
+      // Verify it's actually the AgentOAuth verifier
+      if (data.status === 'ok') {
+        return true;
+      }
     }
   } catch (error) {
+    // Connection refused, timeout, or other error
     return false;
   }
   return false;
@@ -333,7 +340,22 @@ async function main() {
   try {
     // Check if verifier is running
     console.log(chalk.blue('🔍 Checking if verifier is running...\n'));
-    const isRunning = await checkVerifier();
+    
+    // Try multiple times with delay (for CI environments where verifier is starting)
+    let isRunning = false;
+    const maxRetries = 10;
+    
+    for (let i = 0; i < maxRetries; i++) {
+      isRunning = await checkVerifier();
+      if (isRunning) {
+        break;
+      }
+      if (i < maxRetries - 1) {
+        console.log(chalk.gray(`Waiting for verifier... (attempt ${i + 1}/${maxRetries})`));
+        // Wait 1 second before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
     
     if (!isRunning) {
       console.log(chalk.red('❌ Verifier API is not running!\n'));
