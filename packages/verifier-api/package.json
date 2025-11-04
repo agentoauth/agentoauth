@@ -14,6 +14,7 @@
   "dependencies": {
     "@agentoauth/sdk": "workspace:*",
     "@hono/node-server": "^1.8.0",
+    "@simplewebauthn/server": "^10.0.0",
     "hono": "^4.0.0",
     "jose": "^5.2.0"
   },

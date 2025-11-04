@@ -22,7 +22,8 @@ export interface AgentEvent {
 
 export async function runAgent(
   policy: any,
-  onEvent: (event: AgentEvent) => void | Promise<void>
+  onEvent: (event: AgentEvent) => void | Promise<void>,
+  intent?: any // Optional WebAuthn intent for v0.3
 ): Promise<void> {
   try {
     // Validate environment
@@ -79,8 +80,8 @@ export async function runAgent(
     await onEvent({ type: 'log', level: 'info', message: '🎫 Issuing consent token...' });
     const { hashPolicy } = await import('@agentoauth/sdk');
     
-    const payload = {
-      ver: 'act.v0.2' as const,
+    const payload: any = {
+      ver: intent ? 'act.v0.3' as const : 'act.v0.2' as const,
       jti: crypto.randomUUID(),
       user: 'did:user:alice',
       agent: 'did:agent:finance-assistant',
@@ -96,6 +97,12 @@ export async function runAgent(
       exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
       nonce: crypto.randomUUID()
     };
+    
+    // Add intent if provided (v0.3)
+    if (intent) {
+      payload.intent = intent;
+      await onEvent({ type: 'log', level: 'success', message: `✅ Including passkey approval (valid until ${new Date(intent.valid_until).toLocaleDateString()})` });
+    }
     
     const token = await request(payload, privateJWK, publicJWK.kid);
     await onEvent({ type: 'log', level: 'success', message: '✅ Consent token issued' });

@@ -5,6 +5,7 @@
 ## Features
 
 🤖 **AI-powered policy creation** - Describe your policy in plain English, GPT-4 generates the JSON  
+🔐 **Passkey approval (NEW!)** - Optional time-bound human approval (7/30/90 days) using WebAuthn  
 ✨ **Real-time processing** - Watch invoices being verified and paid live  
 🎨 **Animated UI** - Smooth transitions and status updates with Framer Motion  
 📊 **Live agent logs** - See what the AI is thinking in real-time  
@@ -51,13 +52,18 @@ Open [http://localhost:3001](http://localhost:3001)
    - Example: "Travel expenses: max $500 per booking, $2000/week, only Airbnb, Expedia, Uber"
 2. Click **"Generate Policy"** - GPT-4 converts it to AgentOAuth policy JSON
 3. Review the generated policy (click "View JSON" to see the full structure)
-4. Click **"Start Processing"** to watch the agent work
-5. View receipts by clicking any invoice row
-6. Check **"View Stripe Dashboard"** to see all payments (including denials)
+4. **[OPTIONAL] Approve with Passkey** - Click "Approve with Passkey" to add time-bound human approval
+   - Select duration: 7, 30, or 90 days
+   - Use your device's biometric (Face ID, Touch ID, Windows Hello)
+   - Check "Simulate expired" to test expiry handling
+   - Or skip this step to run without intent (v0.2 mode)
+5. Click **"Start Processing"** to watch the agent work
+6. View receipts by clicking any invoice row
+7. Check **"View Stripe Dashboard"** to see all payments (including denials)
 
 ## How It Works
 
-### AI-Powered Flow
+### AI-Powered Flow (with Passkey Approval)
 
 ```
 [1] User Input
@@ -66,20 +72,28 @@ Open [http://localhost:3001](http://localhost:3001)
 [2] AI Generation (GPT-4)
     Converts natural language → pol.v0.2 JSON
          ↓
-[3] Agent Signs Policy 🔐 Signature #1 (Intent)
-    Creates AgentOAuth consent token
+[3] User Approval 🔑 (Optional - act.v0.3)
+    Passkey biometric/PIN approval with time limit (7/30/90 days)
          ↓
-[4] For Each Invoice
+[4] Agent Signs Policy 🔐 Signature #1 (Intent)
+    Creates AgentOAuth consent token (with intent if approved)
+         ↓
+[5] For Each Invoice
     Calls verifier.agentoauth.org/verify
          ↓
-[5] Verifier Checks Policy 🔐 Signature #2 (Verification)
-    • Validates signature
-    • Checks limits
-    • Issues receipt
+[6] Verifier Checks Policy 🔐 Signature #2 (Verification)
+    • Validates agent signature
+    • Checks intent expiry (if v0.3)
+    • Evaluates policy limits
+    • Issues cryptographic receipt
          ↓
-[6] Merchant Enforces (Stripe)
+[7] Merchant Enforces (Stripe)
     Creates PaymentIntent with receipt metadata
 ```
+
+**Two Security Modes:**
+- **v0.3 (with Passkey)**: Agent signature + Passkey approval + Verifier signature = 3-layer security
+- **v0.2 (basic)**: Agent signature + Verifier signature = 2-layer security
 
 ### Example Policy Prompts
 

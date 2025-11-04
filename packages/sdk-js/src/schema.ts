@@ -4,11 +4,11 @@ const ajv = new Ajv();
 
 export const payloadSchema = {
   type: 'object',
-  required: ['ver', 'user', 'agent', 'scope', 'limit', 'exp', 'nonce'],
+  required: ['ver', 'user', 'agent', 'scope', 'exp', 'nonce'],
   properties: {
     ver: {
       type: 'string',
-      enum: ['0.2', '0.1', 'act.v0.2']
+      enum: ['0.2', '0.1', 'act.v0.2', 'act.v0.3']
     },
     jti: {
       type: 'string',
@@ -23,9 +23,21 @@ export const payloadSchema = {
       minLength: 1
     },
     scope: {
-      type: 'string',
-      minLength: 1,
-      pattern: '^[a-zA-Z0-9_:.\\-]+$'
+      oneOf: [
+        {
+          type: 'string',
+          minLength: 1,
+          pattern: '^[a-zA-Z0-9_:.\\-]+$'
+        },
+        {
+          type: 'array',
+          items: {
+            type: 'string',
+            minLength: 1
+          },
+          minItems: 1
+        }
+      ]
     },
     limit: {
       type: 'object',

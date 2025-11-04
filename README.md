@@ -1,14 +1,16 @@
 # AgentOAuth
 
-## AgentOAuth v0.7 — Alpha
+## AgentOAuth v0.8 — Alpha
 
 > Public read-only repository. Spec and APIs are evolving.
 
 A neutral protocol for AI agents to prove who authorized what. AgentOAuth provides verifiable authorization tokens with clear scope, limits, and expiration—built on OAuth/JWT patterns for maximum interoperability.
 
-**Status**: ✅ v0.7 Complete | 📦 19 Unit Tests + 23 Conformance Tests Passing | 🔐 Production Ready
+**Status**: ✅ v0.8 Alpha | 📦 19 Unit Tests + 23 Conformance Tests Passing | 🔐 Production Ready
 
-**Latest v0.7**: Policy Support (Phase 2A) - programmable consent with pol.v0.2 schema, policy evaluation engine, JWS receipts, budget tracking
+**Latest v0.8 (Phase 2B)**: Time-Bound Passkey Approval - WebAuthn/Passkey-backed human intent verification with automatic expiry (7/30/90 days). Adds cryptographic proof that a real user approved a specific policy with a defined time window.
+
+**Previous v0.7 (Phase 2A)**: Policy Support - programmable consent with pol.v0.2 schema, policy evaluation engine, JWS receipts, budget tracking
 
 ## 🚀 5-Minute Quickstart
 
@@ -173,7 +175,99 @@ curl -X POST http://localhost:3000/verify \
 - **Five-field schema**: user, agent, scope, limit, expiry + signature
 - **JWS tokens**: EdDSA (Ed25519) recommended, ES256K optional
 - **JWT-compatible**: Works with existing JWT libraries
+- **Policy Support (v0.2)**: Structured rules with actions, resources, limits, constraints
+- **Intent Approval (v0.3)**: Time-bound passkey approval with automatic expiry
 - **Open protocol**: MIT/Apache 2.0 dual license
+
+## 🔐 Passkey Intent Approval (v0.3 - NEW!)
+
+AgentOAuth v0.3 adds **time-bound human approval** using WebAuthn/Passkeys:
+
+### Why It Matters
+
+Traditional agent authorization lacks proof of explicit human approval. With intent approval:
+
+- **Cryptographic Proof**: WebAuthn signature proves a real user approved the policy
+- **Time-Bounded**: Approval automatically expires (7/30/90 days) - no manual revocation needed
+- **Policy-Bound**: Passkey signature is cryptographically tied to the specific policy hash
+- **Auto-Expiry Protection**: Even if agent keys are compromised, attacker can only act within the approval window
+
+### How It Works
+
+```
+[1] User describes policy → AI generates pol.v0.2 JSON
+       ↓
+[2] User approves with Passkey (selects 7/30/90 days)
+       ↓ Creates intent with valid_until timestamp
+[3] Agent creates token with embedded intent (act.v0.3)
+       ↓ 🔐 Signature Layer 1: Agent's intent
+[4] Verifier checks: policy + intent expiry + budget
+       ↓ 🔐 Signature Layer 2: Verifier's decision  
+[5] Merchant enforces with cryptographic receipt
+```
+
+### SDK Usage
+
+```typescript
+import { requestIntent, issueConsent, buildPolicyV2 } from '@agentoauth/sdk';
+
+// 1. Build policy
+const policy = buildPolicyV2()
+  .actions(['payments.send'])
+  .limitPerTxn(500, 'USD')
+  .limitPerPeriod(2000, 'USD', 'week')
+  .finalize();
+
+// 2. Request passkey approval (browser only)
+const intent = await requestIntent(
+  policy, 
+  30, // 30 days
+  window.location.hostname
+);
+// User sees passkey prompt (biometric/PIN)
+
+// 3. Issue consent token with intent
+const { token } = await issueConsent({
+  user: 'did:user:alice',
+  agent: 'did:agent:finance',
+  scope: ['payments.send'],
+  policy,
+  intent, // <-- Includes passkey approval
+  expiresIn: '7d'
+});
+
+// Token now includes:
+// - policy: structured rules
+// - intent: WebAuthn assertion with valid_until
+// - Two-layer security: agent signs intent, verifier signs decision
+```
+
+### Automatic Expiry
+
+```typescript
+// Intent expires automatically - no manual revocation needed
+{
+  "intent": {
+    "approved_at": "2025-11-05T19:00:00Z",
+    "valid_until": "2025-12-05T19:00:00Z", // 30 days later
+    "type": "webauthn.v0"
+  }
+}
+
+// After Dec 5, verifier returns:
+// { "decision": "DENY", "code": "INTENT_EXPIRED" }
+```
+
+### Browser Support
+
+- ✅ Chrome/Edge 90+
+- ✅ Safari 16+
+- ✅ Firefox 119+
+- ⚠️ Older browsers: Falls back to v0.2 (no intent)
+
+### Try It
+
+See the [LangChain Invoice Demo](packages/langchain-invoice-demo/ui/) for a full working example with passkey approval UI!
 
 ## Try the Demo
 

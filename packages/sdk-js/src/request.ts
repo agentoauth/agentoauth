@@ -1,7 +1,17 @@
 import { SignJWT, importJWK, type JWK } from 'jose';
 import { AgentOAuthPayload, AgentOAuthError } from './types.js';
 import { validatePayload } from './schema.js';
-import crypto from 'node:crypto';
+
+// Use native crypto in browser, Node.js crypto otherwise
+const getCrypto = () => {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto) {
+    return globalThis.crypto;
+  }
+  // Only import node:crypto if we're in Node.js
+  return require('node:crypto');
+};
+
+const crypto = getCrypto();
 
 /**
  * Creates a signed AgentOAuth authorization token.

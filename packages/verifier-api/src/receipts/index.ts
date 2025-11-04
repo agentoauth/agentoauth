@@ -18,6 +18,9 @@ export interface Receipt {
     period?: number;
     currency?: string;
   };
+  intent_verified?: boolean; // (v0.3) Whether intent was validated
+  intent_valid_until?: string; // (v0.3) ISO 8601 timestamp when intent expires
+  intent_approved_at?: string; // (v0.3) ISO 8601 timestamp when intent was approved
   metadata?: Record<string, unknown>;
 }
 

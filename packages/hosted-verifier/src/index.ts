@@ -1,8 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-// Import minimal decode functionality to avoid Node.js dependencies
-// Note: For alpha, we'll do basic token parsing instead of full SDK import
-import { decode } from '@agentoauth/sdk/dist/decode.js';
+// Import minimal decode functionality (local copy to avoid SDK's ajv dependency)
+import { decode } from './decode.js';
 import { verifyApiKey, loadApiKeyPublicKey } from './auth.js';
 import { RateLimiter } from './rate-limit.js';
 import { AuditLogger } from './audit.js';
@@ -11,6 +10,7 @@ import { loadPublicKeys } from './keys.js';
 import { evaluatePolicyStateless, hashPolicy, canonicalizePolicy } from './policy/index.js';
 import { signReceipt, createReceiptId } from './policy/receipts.js';
 import { PolicyState } from './policy-state.js';
+import { validateIntentBasic } from './intent/validator.js';
 
 interface Env {
   RATE_LIMIT_KV: KVNamespace;
@@ -41,11 +41,12 @@ app.get('/health', (c) => {
     build: '2025-11-02',
     features: [
       'act.v0.2', 
+      'act.v0.3',           // NEW: Intent layer with WebAuthn
       'policy-eval', 
       'stateful-budgets', 
       'receipts', 
-      'keyless-free-tier',  // NEW: API key optional
-      'ip-rate-limiting'    // NEW: IP-based backstop
+      'keyless-free-tier',  // API key optional
+      'ip-rate-limiting'    // IP-based backstop
     ],
     api_key_optional: true,  // NEW: X-API-Key is optional
     free_tier: {
@@ -305,13 +306,13 @@ app.post('/verify', async (c) => {
             suggestion: 'Check the audience field in your token matches the expected value'
           }
         };
-      } else if (!payload.ver || (payload.ver !== '0.1' && payload.ver !== '0.2' && payload.ver !== 'act.v0.2')) {
+      } else if (!payload.ver || (payload.ver !== '0.1' && payload.ver !== '0.2' && payload.ver !== 'act.v0.2' && payload.ver !== 'act.v0.3')) {
         verificationResult = {
           valid: false,
           error: { 
             message: `Unsupported token version: ${payload.ver}`, 
             code: 'UNSUPPORTED_VERSION',
-            suggestion: 'Use a supported AgentOAuth token version (0.1, 0.2, or act.v0.2)'
+            suggestion: 'Use a supported AgentOAuth token version (0.1, 0.2, act.v0.2, or act.v0.3)'
           }
         };
       } else {
@@ -351,6 +352,31 @@ app.post('/verify', async (c) => {
             error: 'Policy hash verification failed',
             code: 'POLICY_HASH_MISMATCH'
           }, 400);
+        }
+        
+        // Intent validation (act.v0.3)
+        if (verificationResult.payload.ver === 'act.v0.3' && (verificationResult.payload as any).intent) {
+          const intent = (verificationResult.payload as any).intent;
+          const intentResult = validateIntentBasic(intent, verificationResult.payload.policy_hash);
+          
+          if (!intentResult.valid) {
+            errorCode = intentResult.code;
+            statusCode = 403;
+            
+            return c.json({
+              decision: 'DENY',
+              error: intentResult.reason,
+              code: intentResult.code,
+              intent_expired: intentResult.expired,
+              intent_valid_until: intent.valid_until
+            }, 403);
+          }
+          
+          // Log successful intent validation
+          console.log('✅ Intent validation passed:', {
+            remainingDays: intentResult.remainingDays,
+            validUntil: intent.valid_until
+          });
         }
         
         // Check revocation (KV lookup)
@@ -438,13 +464,23 @@ app.post('/verify', async (c) => {
         try {
           receiptId = createReceiptId();
           const privateKey = JSON.parse(c.env.SIGNING_PRIVATE_KEY);
-          receiptToken = await signReceipt({
+          const receiptPayload: any = {
             id: receiptId,
             policy_id: verificationResult.payload.policy.id,
             decision: 'ALLOW',
             timestamp: Math.floor(Date.now() / 1000),
             remaining: doDecision.remaining
-          }, privateKey, c.env.SIGNING_KID);
+          };
+          
+          // Add intent verification info to receipt (v0.3)
+          if (verificationResult.payload.ver === 'act.v0.3' && (verificationResult.payload as any).intent) {
+            const intent = (verificationResult.payload as any).intent;
+            receiptPayload.intent_verified = true;
+            receiptPayload.intent_valid_until = intent.valid_until;
+            receiptPayload.intent_approved_at = intent.approved_at;
+          }
+          
+          receiptToken = await signReceipt(receiptPayload, privateKey, c.env.SIGNING_KID);
           
           // Store receipt in KV (400 days TTL)
           await c.env.RATE_LIMIT_KV.put(`rcpt:${receiptId}`, receiptToken, { 
@@ -698,7 +734,7 @@ app.get('/receipts/:id', async (c) => {
     const acceptHeader = c.req.header('Accept') || '';
     if (acceptHeader.includes('text/html')) {
       // Decode and display receipt
-      const { decode } = await import('@agentoauth/sdk/dist/decode.js');
+      // decode is already imported at the top
       const { payload } = decode(receipt);
       
       const html = `<!DOCTYPE html>

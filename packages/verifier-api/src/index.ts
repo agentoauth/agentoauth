@@ -7,6 +7,7 @@ import { evaluatePolicy, type PolicyV2, type RequestContext, type PolicyStorage 
 import { hashPolicy } from './policy/canonicalize.js';
 import { signReceipt, createReceiptId, type Receipt } from './receipts/index.js';
 import { MemoryStorage } from './storage/memory.js';
+import { validateIntentBasic } from './intent/validator.js';
 import crypto from 'node:crypto';
 
 const app = new Hono();
@@ -167,6 +168,34 @@ app.post('/verify', async (c) => {
             });
           }
           
+          // Intent validation (act.v0.3)
+          if (result.payload.ver === 'act.v0.3' && (result.payload as any).intent) {
+            console.log('🔐 Validating WebAuthn intent...');
+            const intent = (result.payload as any).intent;
+            const intentResult = validateIntentBasic(intent, result.payload.policy_hash);
+            
+            if (!intentResult.valid) {
+              console.error('❌ Intent validation failed:', {
+                reason: intentResult.reason,
+                code: intentResult.code,
+                expired: intentResult.expired
+              });
+              
+              return c.json({
+                valid: false,
+                error: intentResult.reason,
+                code: intentResult.code,
+                intent_expired: intentResult.expired,
+                intent_valid_until: intent.valid_until
+              }, 403);
+            }
+            
+            console.log('✅ Intent validation passed:', {
+              remainingDays: intentResult.remainingDays,
+              validUntil: intent.valid_until
+            });
+          }
+          
           // Extract request context from body
           const action = body?.action || result.payload.scope;
           const resource = body?.resource ? {
@@ -190,14 +219,24 @@ app.post('/verify', async (c) => {
           
           // Generate signed receipt
           const receiptId = createReceiptId();
-          const receiptToken = await signReceipt({
+          const receiptPayload: any = {
             id: receiptId,
             policy_id: result.payload.policy.id,
             decision: policyResult.allowed ? 'ALLOW' : 'DENY',
             reason: policyResult.reason,
             timestamp: Math.floor(Date.now() / 1000),
             remaining: policyResult.remaining
-          }, keyPair.privateJWK, keyPair.kid);
+          };
+          
+          // Add intent verification info to receipt (v0.3)
+          if (result.payload.ver === 'act.v0.3' && (result.payload as any).intent) {
+            const intent = (result.payload as any).intent;
+            receiptPayload.intent_verified = true;
+            receiptPayload.intent_valid_until = intent.valid_until;
+            receiptPayload.intent_approved_at = intent.approved_at;
+          }
+          
+          const receiptToken = await signReceipt(receiptPayload, keyPair.privateJWK, keyPair.kid);
           
           // Store receipt
           receiptStorage.set(receiptId, receiptToken);
@@ -458,23 +497,41 @@ app.post('/demo/create-token', async (c) => {
     const { request: createToken } = await import('@agentoauth/sdk');
     console.log('✅ SDK imported');
 
+    // Determine version based on intent
+    let ver: '0.2' | 'act.v0.2' | 'act.v0.3' = '0.2';
+    if (body.intent) {
+      ver = 'act.v0.3';
+    } else if (body.policy) {
+      ver = 'act.v0.2';
+    }
+    
     const payload: any = {
-      ver: body.policy ? 'act.v0.2' as const : '0.2' as const,
+      ver,
       jti: body.jti || crypto.randomUUID(),
       user: body.user,
       agent: body.agent,
       scope: body.scope,
       limit: body.limit || { amount: 1000, currency: 'USD' },
-      aud: body.aud,
-      exp: body.exp || Math.floor(Date.now() / 1000) + 3600,
+      aud: body.audience || body.aud,
+      exp: body.exp || (body.expiresIn ? Math.floor(Date.now() / 1000) + body.expiresIn : Math.floor(Date.now() / 1000) + 3600),
       nonce: body.nonce || crypto.randomUUID()
     };
+    
+    // Add iss if provided
+    if (body.iss) {
+      payload.iss = body.iss;
+    }
 
     // Add policy if provided
     if (body.policy) {
       const { hashPolicy } = await import('@agentoauth/sdk');
       payload.policy = body.policy;
       payload.policy_hash = hashPolicy(body.policy);
+    }
+    
+    // Add intent if provided (v0.3)
+    if (body.intent) {
+      payload.intent = body.intent;
     }
 
     console.log('🔐 Creating token with payload:', JSON.stringify(payload, null, 2));

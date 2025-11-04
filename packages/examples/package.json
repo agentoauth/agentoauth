@@ -9,6 +9,7 @@
     "issue-policy": "node issue-with-policy.js",
     "verify-policy": "node verify-with-policy.js",
     "test-e2e": "node test-policy-e2e.js",
+    "test:intent": "node test-intent-e2e.js",
     "build": "echo 'No build needed for examples'",
     "lint": "echo 'No linting for examples'",
     "test": "echo 'No tests for examples'"

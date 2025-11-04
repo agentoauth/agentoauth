@@ -1,9 +1,34 @@
 /**
+ * WebAuthn Intent (webauthn.v0)
+ * Provides cryptographic proof of human approval with time-bound validity
+ */
+export interface IntentV0 {
+  /** Intent type version */
+  type: 'webauthn.v0';
+  /** Base64url-encoded WebAuthn credential ID */
+  credential_id: string;
+  /** Base64url-encoded WebAuthn signature */
+  signature: string;
+  /** Base64url-encoded client data JSON */
+  client_data_json: string;
+  /** Base64url-encoded authenticator data */
+  authenticator_data: string;
+  /** ISO 8601 timestamp when user approved the policy */
+  approved_at: string;
+  /** ISO 8601 timestamp when approval expires */
+  valid_until: string;
+  /** Base64url-encoded challenge (derived from policy_hash) */
+  challenge: string;
+  /** Relying party identifier (domain) */
+  rp_id: string;
+}
+
+/**
  * AgentOAuth Token Payload (v0.2 / act.v0.2)
  */
 export interface AgentOAuthPayload {
   /** Specification version */
-  ver: '0.2' | '0.1' | 'act.v0.2';
+  ver: '0.2' | '0.1' | 'act.v0.2' | 'act.v0.3';
   /** JWT ID - unique token identifier for revocation and replay protection (required in v0.2) */
   jti?: string;
   /** User identifier (DID or stable ID) */
@@ -11,22 +36,40 @@ export interface AgentOAuthPayload {
   /** Agent identifier */
   agent: string;
   /** OAuth-style scope */
-  scope: string;
+  scope: string | string[];
   /** Authorization limits (legacy, use policy.limits for structured rules) */
-  limit: {
+  limit?: {
     amount: number;
     currency: string;
   };
-  /** Structured policy rules (optional in act.v0.2) */
+  /** Structured policy rules (required in act.v0.2+) */
   policy?: any;
   /** SHA-256 hash of canonicalized policy (required when policy is present) */
   policy_hash?: string;
+  /** WebAuthn intent proving human approval (required in act.v0.3) */
+  intent?: IntentV0;
+  /** Issuer identifier */
+  iss?: string;
   /** Audience (optional) */
   aud?: string;
   /** Expiration timestamp (Unix seconds) */
   exp: number;
   /** Nonce for replay protection */
   nonce: string;
+}
+
+/**
+ * AgentOAuth Token Payload v0.3 (with Intent)
+ */
+export interface AgentOAuthPayloadV3 extends Omit<AgentOAuthPayload, 'ver' | 'intent'> {
+  /** Specification version */
+  ver: 'act.v0.3';
+  /** WebAuthn intent proving human approval (required in v0.3) */
+  intent: IntentV0;
+  /** Structured policy rules (required in v0.3) */
+  policy: any;
+  /** SHA-256 hash of canonicalized policy (required in v0.3) */
+  policy_hash: string;
 }
 
 /**
@@ -52,7 +95,7 @@ export interface VerificationResult {
   /** Error message (if invalid) */
   error?: string;
   /** Error code for programmatic handling */
-  code?: 'INVALID_SIGNATURE' | 'EXPIRED' | 'INVALID_AUDIENCE' | 'INVALID_PAYLOAD' | 'INVALID_VERSION' | 'NETWORK_ERROR' | 'REVOKED' | 'REPLAY';
+  code?: 'INVALID_SIGNATURE' | 'EXPIRED' | 'INVALID_AUDIENCE' | 'INVALID_PAYLOAD' | 'INVALID_VERSION' | 'NETWORK_ERROR' | 'REVOKED' | 'REPLAY' | 'INTENT_EXPIRED' | 'INTENT_INVALID' | 'INTENT_POLICY_MISMATCH';
 }
 
 /**
@@ -68,7 +111,10 @@ export type ErrorCode =
   | 'DECODE_ERROR'
   | 'NETWORK_ERROR'
   | 'REVOKED'
-  | 'REPLAY';
+  | 'REPLAY'
+  | 'INTENT_EXPIRED'
+  | 'INTENT_INVALID'
+  | 'INTENT_POLICY_MISMATCH';
 
 /**
  * Consistent error object structure

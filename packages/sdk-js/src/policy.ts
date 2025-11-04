@@ -113,7 +113,8 @@ export function hasScope(tokenScope: string, requiredScope: string): boolean {
 export function validatePolicy(policy: Partial<AgentOAuthPayload>): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
   
-  if (!policy.scope || policy.scope.trim().length === 0) {
+  const scope = typeof policy.scope === 'string' ? policy.scope : (Array.isArray(policy.scope) ? policy.scope.join(',') : '');
+  if (!scope || scope.trim().length === 0) {
     errors.push('Scope is required');
   }
   

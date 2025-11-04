@@ -1,9 +1,18 @@
 import { generateKeyPair, exportJWK } from 'jose';
 import { request, verify } from './index.js';
-import { AgentOAuthPayload } from './types.js';
-import { writeFile } from 'fs/promises';
+import { AgentOAuthPayload, IntentV0 } from './types.js';
 import { hashPolicy, type PolicyV2 } from './policy-v2.js';
-import crypto from 'node:crypto';
+
+// Use native crypto in browser, Node.js crypto otherwise
+const getCrypto = () => {
+  if (typeof globalThis !== 'undefined' && globalThis.crypto) {
+    return globalThis.crypto;
+  }
+  // Only import node:crypto if we're in Node.js
+  return require('node:crypto');
+};
+
+const crypto = getCrypto();
 
 /**
  * Issue a consent token with automatic key management
@@ -11,33 +20,61 @@ import crypto from 'node:crypto';
 export async function issueConsent(options: {
   user: string;
   agent: string;
-  scope: string;
-  limit: { amount: number; currency: string };
+  scope: string | string[];
+  limit?: { amount: number; currency: string }; // Optional now (required if no policy)
   audience?: string;
   expiresIn?: string | number; // "1h", 3600, etc.
   privateKey?: any; // Auto-generate if not provided
   keyId?: string;
   policy?: PolicyV2; // Optional pol.v0.2 policy
   jti?: string; // Optional JWT ID (auto-generated if not provided)
+  intent?: IntentV0; // Optional WebAuthn intent (act.v0.3)
+  iss?: string; // Optional issuer
 }): Promise<{ token: string; keyId: string; publicKey: any }> {
-  // Helper to build payload with optional policy
+  // Helper to build payload with optional policy and intent
   const buildPayload = (): AgentOAuthPayload => {
+    // Determine version based on intent presence
+    let ver: '0.2' | 'act.v0.2' | 'act.v0.3' = '0.2';
+    if (options.intent) {
+      ver = 'act.v0.3';
+    } else if (options.policy) {
+      ver = 'act.v0.2';
+    }
+
     const payload: AgentOAuthPayload = {
-      ver: options.policy ? 'act.v0.2' as const : '0.2' as const,
+      ver,
       jti: options.jti || crypto.randomUUID(),
       user: options.user,
       agent: options.agent,
       scope: options.scope,
-      limit: options.limit,
       aud: options.audience,
       exp: Math.floor(Date.now() / 1000) + parseExpiresIn(options.expiresIn || '1h'),
       nonce: crypto.randomUUID()
     };
     
+    // Add limit if provided (backward compatibility)
+    if (options.limit) {
+      payload.limit = options.limit;
+    }
+    
+    // Add issuer if provided
+    if (options.iss) {
+      payload.iss = options.iss;
+    }
+    
     // Add policy and policy_hash if provided
     if (options.policy) {
       payload.policy = options.policy;
       payload.policy_hash = hashPolicy(options.policy);
+    }
+    
+    // Add intent if provided (v0.3)
+    if (options.intent) {
+      payload.intent = options.intent;
+      // Ensure policy is also present for v0.3
+      if (!options.policy) {
+        throw new Error('Policy is required when intent is provided (act.v0.3)');
+      }
     }
     
     return payload;
@@ -176,6 +213,8 @@ export async function rotateKeys(options: {
   
   // Auto-save if path provided
   if (options.jwksPath) {
+    // Dynamic import for Node.js-only feature (avoids breaking browser builds)
+    const { writeFile } = await import('fs/promises');
     await writeFile(options.jwksPath, JSON.stringify(updatedJwks, null, 2));
   }
   

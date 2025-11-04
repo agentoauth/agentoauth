@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Play, RotateCcw, ExternalLink, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { Play, RotateCcw, ExternalLink, Sparkles, ChevronDown, ChevronUp, Fingerprint } from 'lucide-react';
 import { InvoiceTable, type Invoice } from '@/components/InvoiceTable';
 import { PolicyCard } from '@/components/PolicyCard';
 import { LogPanel, type LogEntry } from '@/components/LogPanel';
 import { FlowProgressBar } from '@/components/FlowProgressBar';
 import { SignatureExplainerModal } from '@/components/SignatureExplainerModal';
+import { IntentApprover } from '@/components/IntentApprover';
+import type { IntentV0 } from '@agentoauth/sdk/browser';
 
 // Initial invoice data
 const INITIAL_INVOICES: Invoice[] = [
@@ -54,6 +56,11 @@ export default function DashboardPage() {
   const [generatingPolicy, setGeneratingPolicy] = useState(false);
   const [showExamples, setShowExamples] = useState(true);
   
+  // Intent approval state
+  const [userIntent, setUserIntent] = useState<IntentV0 | null>(null);
+  const [showIntentApprover, setShowIntentApprover] = useState(false);
+  const [simulateExpired, setSimulateExpired] = useState(false);
+  
   // Flow tracking
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
@@ -96,6 +103,9 @@ export default function DashboardPage() {
       setCompletedSteps(['input', 'ai']);
       setCurrentStep(null);
       addLog('success', `✅ Policy generated: ${policy.id}`);
+      
+      // Auto-show intent approver after policy generation
+      setShowIntentApprover(true);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       addLog('error', `❌ Failed to generate policy: ${errorMessage}`);
@@ -103,6 +113,25 @@ export default function DashboardPage() {
     } finally {
       setGeneratingPolicy(false);
     }
+  };
+  
+  const handleIntentApproved = (intent: IntentV0) => {
+    // Handle expired simulation
+    if (simulateExpired) {
+      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      intent.valid_until = yesterday.toISOString();
+      addLog('warning', '⚠️ Simulating expired intent (for demo)');
+    }
+    
+    setUserIntent(intent);
+    setShowIntentApprover(false);
+    setCompletedSteps(prev => [...prev, 'approval']);
+    addLog('success', `✅ Passkey approval granted until ${new Date(intent.valid_until).toLocaleDateString()}`);
+  };
+  
+  const handleIntentCancelled = () => {
+    setShowIntentApprover(false);
+    addLog('info', 'ℹ️ Passkey approval skipped - continuing without intent (v0.2 mode)');
   };
   
   const handleStartProcessing = async () => {
@@ -119,12 +148,22 @@ export default function DashboardPage() {
     
     addLog('info', '🚀 Starting invoice processing...');
     
+    // Log intent status
+    if (userIntent) {
+      addLog('info', `🔐 Using passkey approval (expires: ${new Date(userIntent.valid_until).toLocaleDateString()})`);
+    } else {
+      addLog('info', 'ℹ️ Running in basic mode (no passkey approval)');
+    }
+    
     try {
       // Call the processing API (Server-Sent Events)
       const response = await fetch('/api/process', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ policy: generatedPolicy })
+        body: JSON.stringify({ 
+          policy: generatedPolicy,
+          intent: userIntent // Pass intent to backend
+        })
       });
       
       if (!response.ok) {
@@ -217,6 +256,9 @@ export default function DashboardPage() {
     setLogs([]);
     setGeneratedPolicy(null);
     setPolicyInput('');
+    setUserIntent(null);
+    setShowIntentApprover(false);
+    setSimulateExpired(false);
     setCompletedSteps([]);
     setCurrentStep(null);
   };
@@ -320,6 +362,58 @@ export default function DashboardPage() {
               <PolicyCard policy={generatedPolicy} />
             )}
             
+            {/* Passkey Approval Section */}
+            {generatedPolicy && !userIntent && !processing && (
+              <div className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                      <Fingerprint className="w-5 h-5 text-purple-700" />
+                      Passkey Approval (Optional)
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Add time-bound human approval for stronger security
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setShowIntentApprover(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition-colors"
+                  >
+                    Approve with Passkey
+                  </button>
+                </div>
+                
+                {/* Simulate Expired Checkbox */}
+                <div className="mt-3 pt-3 border-t border-purple-200">
+                  <label className="flex items-center gap-2 text-sm cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={simulateExpired}
+                      onChange={(e) => setSimulateExpired(e.target.checked)}
+                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                    />
+                    <span className="text-gray-700">
+                      Simulate expired approval (for demo)
+                    </span>
+                  </label>
+                </div>
+              </div>
+            )}
+            
+            {/* Intent Approved Badge */}
+            {userIntent && (
+              <div className="bg-green-50 border-2 border-green-200 rounded-lg p-4">
+                <div className="flex items-center gap-2 text-green-800">
+                  <Fingerprint className="w-5 h-5" />
+                  <strong>Passkey Approved</strong>
+                </div>
+                <div className="text-sm text-gray-700 mt-1">
+                  Valid until: <strong>{new Date(userIntent.valid_until).toLocaleDateString()}</strong>
+                  {simulateExpired && <span className="text-red-600 ml-2">(⚠️ Expired - Demo)</span>}
+                </div>
+              </div>
+            )}
+            
             {/* Control Buttons */}
             <div className="flex gap-3">
           <button
@@ -382,6 +476,17 @@ export default function DashboardPage() {
             <LogPanel logs={logs} className="h-[300px]" />
           </div>
         </div>
+        
+        {/* Intent Approver Modal */}
+        {showIntentApprover && generatedPolicy && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <IntentApprover 
+              policy={generatedPolicy}
+              onApproved={handleIntentApproved}
+              onCancel={handleIntentCancelled}
+            />
+          </div>
+        )}
         
         {/* Footer */}
         <div className="text-center text-white/80 text-sm">

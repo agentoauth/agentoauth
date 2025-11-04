@@ -4,13 +4,8 @@
  * Structured policy rules for verifiable consent enforcement
  */
 
-// Import Node.js crypto for hashing
+// Import Node.js crypto for hashing (Node.js only - not exported in browser build)
 import { createHash } from 'node:crypto';
-
-// Create a crypto-like object for compatibility
-const crypto = {
-  createHash: (algorithm: string) => createHash(algorithm)
-};
 
 /**
  * Policy object structure (pol.v0.2)
@@ -220,18 +215,14 @@ export function canonicalizePolicy(policy: PolicyV2): string {
  * Compute SHA-256 hash of canonicalized policy
  * 
  * Returns hash in format "sha256:hexstring"
+ * 
+ * Note: This function is Node.js only (uses crypto module)
  */
 export function hashPolicy(policy: PolicyV2): string {
   const canonical = canonicalizePolicy(policy);
-  
-  if (!crypto) {
-    throw new Error('Crypto module not available');
-  }
-  
-  const hash = crypto.createHash('sha256');
+  const hash = createHash('sha256');
   hash.update(canonical, 'utf8');
   const hex = hash.digest('hex');
-  
   return `sha256:${hex}`;
 }
 

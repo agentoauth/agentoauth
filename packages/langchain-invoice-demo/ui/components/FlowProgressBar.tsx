@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { User, Brain, PenTool, ShieldCheck, Store, Check, Info } from 'lucide-react';
+import { User, Brain, Fingerprint, PenTool, ShieldCheck, Store, Check, Info } from 'lucide-react';
 import { useState } from 'react';
 
 interface FlowProgressBarProps {
@@ -16,6 +16,7 @@ export function FlowProgressBar({ completedSteps, currentStep, onSignatureClick 
   const steps = [
     { id: 'input', icon: User, label: 'User Input', description: 'Describe policy needs' },
     { id: 'ai', icon: Brain, label: 'AI Generate', description: 'GPT-4 creates JSON' },
+    { id: 'approval', icon: Fingerprint, label: 'User Approval', description: 'Passkey approval with time limit' },
     { id: 'signing', icon: PenTool, label: 'Agent Sign', description: 'Intent signature', hasSignature: true },
     { id: 'verification', icon: ShieldCheck, label: 'Verify', description: 'Policy check + signature', hasSignature: true },
     { id: 'payment', icon: Store, label: 'Payment', description: 'Stripe processes' }

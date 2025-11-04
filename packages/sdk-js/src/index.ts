@@ -38,6 +38,15 @@ export {
   type PolicyConstraints
 } from './policy-v2.js';
 
+// Intent (v0.3) - WebAuthn/Passkey approval
+export {
+  requestIntent,
+  isWebAuthnSupported,
+  isIntentExpired,
+  getIntentRemainingDays,
+  type IntentDuration
+} from './intent.js';
+
 // Key management
 export { 
   loadKeys, 
@@ -49,6 +58,8 @@ export {
 
 export type {
   AgentOAuthPayload,
+  AgentOAuthPayloadV3,
+  IntentV0,
   VerifyOptions,
   VerificationResult,
   DecodedToken,

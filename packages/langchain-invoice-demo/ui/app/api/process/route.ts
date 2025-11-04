@@ -26,8 +26,8 @@ export async function POST(request: NextRequest) {
     });
   }
   
-  // Get policy from request body
-  const { policy } = await request.json();
+  // Get policy and optional intent from request body
+  const { policy, intent } = await request.json();
   
   if (!policy) {
     return new Response(JSON.stringify({
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
   // Run agent in the background
   (async () => {
     try {
-      await runAgent(policy, sendEvent);
+      await runAgent(policy, sendEvent, intent);
     } catch (error) {
       await sendEvent({
         type: 'error',
