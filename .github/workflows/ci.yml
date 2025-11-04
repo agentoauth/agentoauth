@@ -50,8 +50,34 @@ jobs:
       
       - name: Run E2E intent tests (v0.3)
         run: |
-          cd packages/examples
+          # Start verifier in background
+          cd packages/verifier-api
+          pnpm dev &
+          VERIFIER_PID=$!
+          
+          # Wait for verifier to be ready
+          echo "Waiting for verifier to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:3000/health > /dev/null 2>&1; then
+              echo "Verifier is ready!"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Verifier failed to start"
+              kill $VERIFIER_PID 2>/dev/null || true
+              exit 1
+            fi
+            sleep 1
+          done
+          
+          # Run tests
+          cd ../examples
           pnpm test:intent
+          TEST_EXIT=$?
+          
+          # Cleanup
+          kill $VERIFIER_PID 2>/dev/null || true
+          exit $TEST_EXIT
         env:
           NODE_ENV: test
       
