@@ -13,6 +13,8 @@
     "demo": "pnpm install && pnpm run build && cd packages/demo-agent-to-merchant && bash demo.sh",
     "demo:merchant": "cd packages/demo-agent-to-merchant && node merchant.js",
     "demo:agent": "cd packages/demo-agent-to-merchant && node agent.js",
+    "demo:invoice-ui": "pnpm install && pnpm build && cd packages/langchain-invoice-demo/ui && pnpm dev",
+    "demo:invoice-cli": "pnpm install && pnpm build && cd packages/langchain-invoice-demo && pnpm start",
     "test:conformance": "cd packages/conformance && pnpm build && pnpm test:local",
     "test:conformance:remote": "cd packages/conformance && pnpm build && pnpm test:remote",
     "quickstart:node": "cd quickstarts/node-express && npm install && npm run demo",

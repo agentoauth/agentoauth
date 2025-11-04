@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "setup": "cp .env.example .env && echo '\n✅ Created .env file.\n\nAdd your API keys:\n  - STRIPE_SECRET_KEY (from https://dashboard.stripe.com/test/apikeys)\n  - OPENAI_API_KEY (from https://platform.openai.com/api-keys)\n'",
     "dev": "next dev -p 3001",
     "build": "next build",
     "start": "next start -p 3001",
@@ -15,6 +16,8 @@
     "framer-motion": "^11.0.0",
     "lucide-react": "^0.400.0",
     "@agentoauth/sdk": "workspace:*",
+    "@langchain/openai": "^0.3.0",
+    "langchain": "^0.3.0",
     "stripe": "^17.0.0",
     "jose": "^5.2.0"
   },

@@ -21,6 +21,7 @@ export interface AgentEvent {
 }
 
 export async function runAgent(
+  policy: any,
   onEvent: (event: AgentEvent) => void | Promise<void>
 ): Promise<void> {
   try {
@@ -70,26 +71,9 @@ export async function runAgent(
     publicJWK.kid = 'finance-agent-key-1';
     await onEvent({ type: 'log', level: 'success', message: '✅ Keypair generated' });
     
-    // Step 3: Create policy
-    await onEvent({ type: 'log', level: 'info', message: '📋 Creating payment policy...' });
-    const { buildPolicyV2 } = await import('@agentoauth/sdk');
-    const policyId = `pol_travel_${crypto.randomBytes(8).toString('hex')}`;
-    
-    const policy = buildPolicyV2()
-      .id(policyId)
-      .actions(['payments.send'])
-      .merchants(['airbnb', 'expedia', 'uber'])
-      .limitPerTxn(500, 'USD')
-      .limitPerPeriod(2000, 'USD', 'week')
-      .strict(true)
-      .meta({ 
-        note: 'Business travel policy - 24/7 demo mode',
-        created: new Date().toISOString(),
-        department: 'Finance'
-      })
-      .finalize();
-    
-    await onEvent({ type: 'log', level: 'success', message: `✅ Policy: $${policy.limits.per_txn.amount}/txn, $${policy.limits.per_period.amount}/week` });
+    // Step 3: Use provided policy
+    await onEvent({ type: 'log', level: 'info', message: '📋 Using AI-generated policy...' });
+    await onEvent({ type: 'log', level: 'success', message: `✅ Policy: $${policy.limits.per_txn.amount}/txn, $${policy.limits.per_period.amount}/${policy.limits.per_period.period}` });
     
     // Step 4: Issue token
     await onEvent({ type: 'log', level: 'info', message: '🎫 Issuing consent token...' });

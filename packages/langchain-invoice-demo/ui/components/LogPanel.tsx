@@ -12,9 +12,10 @@ export interface LogEntry {
 
 interface LogPanelProps {
   logs: LogEntry[];
+  className?: string;
 }
 
-export function LogPanel({ logs }: LogPanelProps) {
+export function LogPanel({ logs, className }: LogPanelProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
   
   useEffect(() => {
@@ -48,7 +49,7 @@ export function LogPanel({ logs }: LogPanelProps) {
   };
   
   return (
-    <div className="bg-white rounded-lg shadow-lg overflow-hidden flex flex-col h-[600px]">
+    <div className={`bg-white rounded-lg shadow-lg overflow-hidden flex flex-col ${className || 'h-[600px]'}`}>
       <div className="px-6 py-4 bg-gray-900 text-white flex items-center gap-2">
         <Terminal className="w-5 h-5" />
         <h3 className="font-bold">Agent Logs</h3>

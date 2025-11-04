@@ -4,6 +4,7 @@
 
 ## Features
 
+🤖 **AI-powered policy creation** - Describe your policy in plain English, GPT-4 generates the JSON  
 ✨ **Real-time processing** - Watch invoices being verified and paid live  
 🎨 **Animated UI** - Smooth transitions and status updates with Framer Motion  
 📊 **Live agent logs** - See what the AI is thinking in real-time  
@@ -26,10 +27,15 @@ cd packages/langchain-invoice-demo/ui
 cp .env.example .env
 ```
 
-Edit `.env`:
+Edit `.env` and add your API keys:
 ```env
 STRIPE_SECRET_KEY=sk_test_...
+OPENAI_API_KEY=sk-...
 ```
+
+Get your keys from:
+- Stripe: https://dashboard.stripe.com/test/apikeys
+- OpenAI: https://platform.openai.com/api-keys
 
 ### 3. Run the UI
 
@@ -41,37 +47,45 @@ Open [http://localhost:3001](http://localhost:3001)
 
 ### 4. Start processing
 
-1. Click **"Start Processing"**
-2. Watch the agent verify and pay invoices in real-time
-3. Click any invoice with a receipt to view the cryptographic proof
-4. Click **"View Stripe Dashboard"** to see all payments (including denials)
+1. **Describe your policy** in natural language (or click an example)
+   - Example: "Travel expenses: max $500 per booking, $2000/week, only Airbnb, Expedia, Uber"
+2. Click **"Generate Policy"** - GPT-4 converts it to AgentOAuth policy JSON
+3. Review the generated policy (click "View JSON" to see the full structure)
+4. Click **"Start Processing"** to watch the agent work
+5. View receipts by clicking any invoice row
+6. Check **"View Stripe Dashboard"** to see all payments (including denials)
 
 ## How It Works
 
+### AI-Powered Flow
+
 ```
-┌─────────────────┐
-│  Policy Created │ → $500/txn, $2000/week, merchants: [airbnb, expedia, uber]
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Token Signed   │ → Consent token with policy + policy_hash
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│ Process Invoice │
-│   inv_001: $300 │ → ✅ PAID (within limits)
-│   inv_002: $700 │ → ❌ DENIED (exceeds $500/txn)
-│   inv_003: $150 │ → ✅ PAID (within limits)
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  Create Stripe  │ → PaymentIntents created for ALL attempts (even denials)
-│  PaymentIntents │    Metadata includes: decision, receipt_id, policy_id
-└─────────────────┘
+[1] User Input
+    "Travel expenses: max $500 per booking, $2000/week..."
+         ↓
+[2] AI Generation (GPT-4)
+    Converts natural language → pol.v0.2 JSON
+         ↓
+[3] Agent Signs Policy 🔐 Signature #1 (Intent)
+    Creates AgentOAuth consent token
+         ↓
+[4] For Each Invoice
+    Calls verifier.agentoauth.org/verify
+         ↓
+[5] Verifier Checks Policy 🔐 Signature #2 (Verification)
+    • Validates signature
+    • Checks limits
+    • Issues receipt
+         ↓
+[6] Merchant Enforces (Stripe)
+    Creates PaymentIntent with receipt metadata
 ```
+
+### Example Policy Prompts
+
+- **Travel**: "Max $500 per booking, $2000/week, only Airbnb, Expedia, Uber"
+- **SaaS**: "Max $100/month per service, only Stripe, AWS, Vercel"
+- **Team Lunch**: "Max $50 per person, $500/week, only Uber Eats, DoorDash"
 
 ## Architecture
 
@@ -87,6 +101,8 @@ Open [http://localhost:3001](http://localhost:3001)
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `STRIPE_SECRET_KEY` | ✅ Yes | - | Your Stripe test secret key |
+| `OPENAI_API_KEY` | ✅ Yes | - | Your OpenAI API key (for policy generation) |
+| `OPENAI_MODEL` | No | `gpt-4o` | OpenAI model to use |
 | `VERIFIER_URL` | No | `https://verifier.agentoauth.org` | AgentOAuth verifier endpoint |
 
 ## Features

@@ -118,7 +118,7 @@ export function InvoiceTable({ invoices, onRowClick }: InvoiceTableProps) {
       {invoices.length === 0 && (
         <div className="px-6 py-12 text-center text-gray-500">
           <p>No invoices to display</p>
-          <p className="text-sm mt-1">Click "Start Processing" to begin</p>
+          <p className="text-sm mt-1">Click &quot;Start Processing&quot; to begin</p>
         </div>
       )}
     </div>
