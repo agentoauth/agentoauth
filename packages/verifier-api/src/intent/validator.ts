@@ -5,11 +5,9 @@
  * Ensures passkey approvals are cryptographically valid and not expired.
  */
 
-import { verifyAuthenticationResponse } from '@simplewebauthn/server';
-import type { 
-  AuthenticationResponseJSON,
-  VerifyAuthenticationResponseOpts 
-} from '@simplewebauthn/server';
+// Note: We use @simplewebauthn/server for full production validation
+// For now, we do basic validation (expiry, policy hash binding)
+// Full WebAuthn signature verification can be added in production mode
 
 /**
  * Intent validation result
@@ -124,32 +122,12 @@ export async function validateIntent(
       };
     }
 
-    // 6. Verify WebAuthn signature using @simplewebauthn/server
-    // Note: For production, you'd need to store/retrieve the authenticator's public key
-    // For now, we perform basic structural validation
+    // 6. Verify WebAuthn data structure
+    // Note: Full signature verification requires storing the authenticator's public key during registration
+    // For this demo, we perform basic structural validation
     
-    // Build authentication response in SimpleWebAuthn format
-    const authResponse: AuthenticationResponseJSON = {
-      id: intent.credential_id,
-      rawId: intent.credential_id,
-      response: {
-        authenticatorData: intent.authenticator_data,
-        clientDataJSON: intent.client_data_json,
-        signature: intent.signature,
-        userHandle: null
-      },
-      type: 'public-key',
-      clientExtensionResults: {},
-      authenticatorAttachment: 'platform'
-    };
-
-    // For validation, we need the authenticator's public key
-    // In a real implementation, this would be stored during registration
-    // For now, we'll do basic structural validation
-    
-    // Verify signature structure and format are valid
+    // Verify signature and authenticator data are valid base64url format
     try {
-      // Decode to ensure valid base64url format
       base64urlDecode(intent.signature);
       base64urlDecode(intent.authenticator_data);
     } catch (error) {
@@ -160,6 +138,12 @@ export async function validateIntent(
         code: 'INTENT_INVALID'
       };
     }
+    
+    // TODO: For production, implement full WebAuthn signature verification
+    // This would require:
+    // 1. Storing the authenticator's public key during credential creation
+    // 2. Using @simplewebauthn/server to verify the assertion
+    // 3. Checking the signature against the stored public key
 
     // Calculate remaining validity
     const remainingMs = validUntil.getTime() - now.getTime();
