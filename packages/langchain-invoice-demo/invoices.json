@@ -1,0 +1,30 @@
+[
+  {
+    "invoice_id": "inv_001",
+    "merchant": "airbnb",
+    "amount": 300,
+    "currency": "USD",
+    "due_date": "2025-11-10",
+    "description": "Hotel reservation - San Francisco",
+    "status": "pending"
+  },
+  {
+    "invoice_id": "inv_002",
+    "merchant": "expedia",
+    "amount": 700,
+    "currency": "USD",
+    "due_date": "2025-11-12",
+    "description": "Flight tickets - NYC to SFO",
+    "status": "pending"
+  },
+  {
+    "invoice_id": "inv_003",
+    "merchant": "uber",
+    "amount": 150,
+    "currency": "USD",
+    "due_date": "2025-11-15",
+    "description": "Airport transportation",
+    "status": "pending"
+  }
+]
+

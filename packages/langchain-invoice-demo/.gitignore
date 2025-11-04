@@ -1,0 +1,15 @@
+# Environment variables
+.env
+.env.local
+
+# Node
+node_modules/
+dist/
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+

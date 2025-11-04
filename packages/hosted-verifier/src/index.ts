@@ -694,6 +694,136 @@ app.get('/receipts/:id', async (c) => {
       return c.json({ error: 'Receipt not found' }, 404);
     }
     
+    // Check if user wants HTML view
+    const acceptHeader = c.req.header('Accept') || '';
+    if (acceptHeader.includes('text/html')) {
+      // Decode and display receipt
+      const { decode } = await import('@agentoauth/sdk/dist/decode.js');
+      const { payload } = decode(receipt);
+      
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Receipt ${receiptId}</title>
+  <style>
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px; 
+      margin: 40px auto; 
+      padding: 20px;
+      background: #f8f9fa;
+    }
+    .container {
+      background: white;
+      border-radius: 12px;
+      padding: 2rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    h1 { color: #1e40af; margin-top: 0; }
+    .badge { 
+      display: inline-block;
+      padding: 0.5rem 1rem; 
+      border-radius: 6px; 
+      font-weight: 600;
+      margin: 1rem 0;
+    }
+    .badge.allow { background: #d1fae5; color: #065f46; }
+    .badge.deny { background: #fee2e2; color: #991b1b; }
+    .field { 
+      margin: 1rem 0; 
+      padding: 1rem;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+    .field-label { 
+      font-weight: 600; 
+      color: #666;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .field-value { 
+      margin-top: 0.5rem;
+      color: #333;
+      font-family: 'Courier New', monospace;
+      font-size: 0.95rem;
+    }
+    .raw-token {
+      background: #2d2d2d;
+      color: #f8f8f2;
+      padding: 1rem;
+      border-radius: 6px;
+      word-break: break-all;
+      font-family: 'Courier New', monospace;
+      font-size: 0.85rem;
+      margin-top: 1rem;
+    }
+    .links { 
+      margin-top: 2rem; 
+      padding-top: 2rem;
+      border-top: 2px solid #e0e0e0;
+    }
+    .links a {
+      color: #3b82f6;
+      text-decoration: none;
+      margin-right: 1.5rem;
+    }
+    .links a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧾 Verification Receipt</h1>
+    
+    <div class="badge ${payload.decision === 'ALLOW' ? 'allow' : 'deny'}">
+      ${payload.decision === 'ALLOW' ? '✅ ALLOWED' : '❌ DENIED'}
+    </div>
+    
+    <div class="field">
+      <div class="field-label">Receipt ID</div>
+      <div class="field-value">${payload.id}</div>
+    </div>
+    
+    <div class="field">
+      <div class="field-label">Policy ID</div>
+      <div class="field-value">${payload.policy_id || 'N/A'}</div>
+    </div>
+    
+    <div class="field">
+      <div class="field-label">Decision</div>
+      <div class="field-value">${payload.decision}</div>
+    </div>
+    
+    <div class="field">
+      <div class="field-label">Timestamp</div>
+      <div class="field-value">${new Date(payload.timestamp * 1000).toISOString()}</div>
+    </div>
+    
+    ${payload.remaining ? `
+    <div class="field">
+      <div class="field-label">Remaining Budget</div>
+      <div class="field-value">$${payload.remaining.amount} ${payload.remaining.currency} (period ends: ${payload.remaining.period_ends})</div>
+    </div>
+    ` : ''}
+    
+    <div class="field">
+      <div class="field-label">Signed Receipt (JWS)</div>
+      <div class="raw-token">${receipt}</div>
+    </div>
+    
+    <div class="links">
+      <a href="/docs">← Documentation</a>
+      <a href="/play">Playground</a>
+      <a href="https://github.com/agentoauth/agentoauth" target="_blank">GitHub</a>
+    </div>
+  </div>
+</body>
+</html>`;
+      
+      return c.html(html);
+    }
+    
+    // Return raw JWT for API clients
     return c.text(receipt, 200, {
       'Content-Type': 'application/jwt'
     });
