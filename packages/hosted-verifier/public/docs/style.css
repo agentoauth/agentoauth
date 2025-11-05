@@ -755,3 +755,56 @@ li {
   background: #555;
 }
 
+/* Demo Token Specific Styles */
+.warning-box {
+  background: #fff3e0;
+  border: 2px solid #ff9800;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+}
+
+.warning-box strong {
+  color: #e65100;
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.warning-box p {
+  margin-bottom: 0.75rem;
+  color: #555;
+}
+
+.warning-box code {
+  background: rgba(0,0,0,0.05);
+  color: #d84315;
+}
+
+.demo-feature {
+  background: #e7f3ff;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #0066cc;
+  margin: 1.5rem 0;
+}
+
+.demo-feature h4 {
+  color: #0066cc;
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.demo-feature ol {
+  margin-left: 1.5rem;
+}
+
+.demo-feature li {
+  margin-bottom: 0.75rem;
+  color: #333;
+}
+
+.demo-feature li strong {
+  color: #0066cc;
+}
+

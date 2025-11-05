@@ -1,6 +1,4 @@
 const tokenInput = document.getElementById('token-input');
-const globalApiUrlInput = document.getElementById('global-api-url');
-const apiModeSelect = document.getElementById('api-mode');
 const audienceInput = document.getElementById('audience');
 const verifyBtn = document.getElementById('verify-btn');
 const demoBtn = document.getElementById('demo-btn');
@@ -12,37 +10,11 @@ const resultBody = document.getElementById('result-body');
 
 // Store current jti for revocation
 let currentJti = null;
+let currentDemoToken = null;
+let currentPolicy = null;
 
-// Auto-detect production mode
-const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
-const defaultApiUrl = isProduction 
-  ? window.location.origin  // https://verifier.agentoauth.org (self-reference)
-  : 'http://localhost:3000';  // Local development
-
-// API mode selector logic
-apiModeSelect.addEventListener('change', (e) => {
-    switch(e.target.value) {
-        case 'local':
-            globalApiUrlInput.value = 'http://localhost:3000';
-            localStorage.setItem('agentoauth_playground_api_url', 'http://localhost:3000');
-            break;
-        case 'hosted':
-            globalApiUrlInput.value = 'https://verifier.agentoauth.org';
-            localStorage.setItem('agentoauth_playground_api_url', 'https://verifier.agentoauth.org');
-            // Show keyless free tier info
-            setTimeout(() => {
-                showInlineNotification(
-                    '✨ Keyless Free Tier: No API key needed! 1K verifications/day per issuer. Perfect for testing.',
-                    'success',
-                    6000
-                );
-            }, 100);
-            break;
-        case 'custom':
-            globalApiUrlInput.focus();
-            break;
-    }
-});
+// Hardcoded to hosted verifier (no localhost option for hosted playground)
+const apiUrl = window.location.origin;
 
 // Inline notification system
 function showInlineNotification(message, type = 'info', duration = 3000) {
@@ -177,7 +149,6 @@ function showResult(valid, data) {
 // Verify token
 async function verifyToken() {
     const token = tokenInput.value.trim();
-    const apiUrl = globalApiUrlInput.value.trim();
     const audience = audienceInput.value.trim();
     
     console.log('🔐 Verifying token...');
@@ -243,7 +214,7 @@ async function verifyToken() {
 
 // Create demo token
 async function createDemoToken() {
-    const apiUrl = globalApiUrlInput.value.trim();
+    // apiUrl is now a global constant
     
     // Check if it's hosted verifier
     if (apiUrl.includes('verifier.agentoauth.org')) {
@@ -338,7 +309,7 @@ async function revokeToken() {
         return;
     }
     
-    const apiUrl = globalApiUrlInput.value.trim();
+    // apiUrl is now a global constant
     
     if (!confirm(`Revoke token with jti: ${currentJti}?`)) {
         return;
@@ -385,7 +356,7 @@ function loadSample() {
     console.log('📝 Loading sample:', sample);
     
     // For now, trigger demo token creation with different parameters
-    const apiUrl = globalApiUrlInput.value.trim();
+    // apiUrl is now a global constant
     
     // Check if it's hosted verifier
     if (apiUrl.includes('verifier.agentoauth.org')) {
@@ -501,7 +472,6 @@ window.switchToPolicyTester = switchToPolicyTester;
 
 // Policy Builder functionality
 const buildPolicyBtn = document.getElementById('build-policy-btn');
-const createTokenBtn = document.getElementById('create-token-btn');
 const templateSelect = document.getElementById('policy-template');
 
 // Policy templates
@@ -647,10 +617,15 @@ buildPolicyBtn.addEventListener('click', () => {
     }
     
     console.log('✅ Policy built:', policy);
+    
+    // Store policy for demo token issuance
+    currentPolicy = policy;
 });
 
+// OLD: createTokenBtn functionality moved to demo token flow below
+/*
 createTokenBtn.addEventListener('click', async () => {
-    const apiUrl = globalApiUrlInput.value.trim();
+    // apiUrl is now a global constant
     const policyJson = document.getElementById('policy-json').textContent;
     
     if (!policyJson) {
@@ -658,15 +633,6 @@ createTokenBtn.addEventListener('click', async () => {
         return;
     }
     
-    // Check if it's hosted verifier
-    if (apiUrl.includes('verifier.agentoauth.org')) {
-        showInlineNotification(
-            '⚠️ Hosted verifier does not support demo token creation. Use the SDK to create tokens with policy.',
-            'warning',
-            5000
-        );
-        return;
-    }
     
     const policy = JSON.parse(policyJson);
     
@@ -704,24 +670,9 @@ createTokenBtn.addEventListener('click', async () => {
 });
 
 function displayPolicyToken(token, payload) {
-    const output = document.getElementById('policy-token-output');
-    output.style.display = 'block';
-    
-    document.getElementById('policy-token-text').textContent = token;
-    document.getElementById('policy-token-payload').textContent = JSON.stringify({
-        ver: payload.ver,
-        user: payload.user,
-        agent: payload.agent,
-        policy_id: payload.policy?.id,
-        policy_hash: payload.policy_hash?.substring(0, 20) + '...',
-        exp: new Date(payload.exp * 1000).toISOString()
-    }, null, 2);
-    
-    window.lastCreatedToken = token;
-    
-    // Scroll to output
-    output.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // This function is no longer used - replaced by demo token display
 }
+*/
 
 // Policy Tester functionality
 const testPolicyBtn = document.getElementById('test-policy-btn');
@@ -733,7 +684,7 @@ testPolicyBtn.addEventListener('click', async () => {
     const resourceId = document.getElementById('tester-resource-id').value.trim();
     const amount = document.getElementById('tester-amount').value;
     const currency = document.getElementById('tester-currency').value.trim();
-    const apiUrl = globalApiUrlInput.value.trim();
+    // apiUrl is now a global constant
     
     if (!token) {
         alert('Please paste a token');
@@ -766,7 +717,10 @@ testPolicyBtn.addEventListener('click', async () => {
         
         testOutput.style.display = 'block';
         
-        if (result.valid) {
+        // Check decision field (for policy tokens) or valid field (for simple tokens)
+        const isAllowed = result.decision === 'ALLOW' || result.valid === true;
+        
+        if (isAllowed) {
             testHeader.className = 'result-header valid';
             testHeader.innerHTML = '✅ Policy Decision: ALLOW';
         } else {
@@ -819,32 +773,6 @@ window.copyPolicyJson = copyPolicyJson;
 
 // Smart defaults and localStorage persistence
 (function() {
-    // Save/restore API URL and mode (with smart defaults)
-    const savedApiUrl = localStorage.getItem('agentoauth_playground_api_url') || defaultApiUrl;
-    globalApiUrlInput.value = savedApiUrl;
-    
-    // Set mode selector based on saved URL
-    if (savedApiUrl === 'http://localhost:3000') {
-        apiModeSelect.value = 'local';
-    } else if (savedApiUrl === 'https://verifier.agentoauth.org' || savedApiUrl === window.location.origin) {
-        apiModeSelect.value = 'hosted';
-    } else {
-        apiModeSelect.value = 'custom';
-    }
-    
-    globalApiUrlInput.addEventListener('change', () => {
-        localStorage.setItem('agentoauth_playground_api_url', globalApiUrlInput.value);
-        
-        // Update mode selector if it matches a preset
-        if (globalApiUrlInput.value === 'http://localhost:3000') {
-            apiModeSelect.value = 'local';
-        } else if (globalApiUrlInput.value === 'https://verifier.agentoauth.org') {
-            apiModeSelect.value = 'hosted';
-        } else {
-            apiModeSelect.value = 'custom';
-        }
-    });
-    
     // Auto-generate Policy ID on blur if empty
     const policyIdInput = document.getElementById('policy-id');
     policyIdInput.addEventListener('blur', (e) => {
@@ -903,7 +831,8 @@ window.copyPolicyJson = copyPolicyJson;
             
             // Clear outputs
             document.getElementById('policy-output').style.display = 'none';
-            document.getElementById('policy-token-output').style.display = 'none';
+            const demoOutput = document.getElementById('demo-token-output');
+            if (demoOutput) demoOutput.style.display = 'none';
             document.getElementById('template-description').style.display = 'none';
             templateSelect.value = '';
             
@@ -915,4 +844,204 @@ window.copyPolicyJson = copyPolicyJson;
     const buildPolicyBtn = document.getElementById('build-policy-btn');
     buildPolicyBtn.parentNode.insertBefore(clearFormBtn, buildPolicyBtn);
 })();
+
+// ============================================================================
+// DEMO TOKEN FUNCTIONALITY
+// ============================================================================
+
+// Token mode toggle
+const tokenModeRadios = document.querySelectorAll('input[name="token-mode"]');
+const demoTokenSection = document.getElementById('demo-token-section');
+const externalTokenSection = document.getElementById('external-token-section');
+
+tokenModeRadios.forEach(radio => {
+    radio.addEventListener('change', (e) => {
+        if (e.target.value === 'demo') {
+            demoTokenSection.style.display = 'block';
+            externalTokenSection.style.display = 'none';
+        } else {
+            demoTokenSection.style.display = 'none';
+            externalTokenSection.style.display = 'block';
+        }
+    });
+});
+
+// Issue demo token
+const issueDemoTokenBtn = document.getElementById('issue-demo-token-btn');
+issueDemoTokenBtn?.addEventListener('click', async () => {
+    const policyJson = document.getElementById('policy-json').textContent;
+    
+    if (!policyJson) {
+        alert('Please build a policy first!');
+        return;
+    }
+    
+    const policy = JSON.parse(policyJson);
+    currentPolicy = policy;
+    
+    issueDemoTokenBtn.classList.add('loading');
+    issueDemoTokenBtn.textContent = 'Issuing Token...';
+    issueDemoTokenBtn.disabled = true;
+    
+    try {
+        console.log('📡 Issuing demo token to:', `${apiUrl}/playground/issue-demo-token`);
+        console.log('📦 Policy:', policy);
+        
+        const response = await fetch(`${apiUrl}/playground/issue-demo-token`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                policy: policy,
+                user_id: 'demo-user',
+                agent_id: 'playground-agent',
+                expires_in: 3600
+            })
+        });
+        
+        console.log('📥 Response status:', response.status);
+        console.log('📥 Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+            let errorMsg = `Server returned ${response.status}`;
+            try {
+                const error = await response.json();
+                errorMsg = error.error || error.message || errorMsg;
+            } catch (e) {
+                // Response wasn't JSON, use status text
+                errorMsg = `${response.status}: ${response.statusText}`;
+            }
+            throw new Error(errorMsg);
+        }
+        
+        const result = await response.json();
+        currentDemoToken = result.token;
+        
+        // Display demo token
+        const parts = result.token.split('.');
+        const compactView = `${parts[0].substring(0, 20)}...${parts[1].substring(0, 20)}...${parts[2].substring(0, 20)}`;
+        
+        document.getElementById('demo-token-compact').textContent = compactView;
+        document.getElementById('demo-token-full').textContent = result.token;
+        
+        // Decode and show payload
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        document.getElementById('demo-token-payload').textContent = JSON.stringify(payload, null, 2);
+        
+        // Show metadata
+        document.getElementById('demo-token-issuer').textContent = result.issuer;
+        document.getElementById('demo-token-kid').textContent = result.kid;
+        document.getElementById('demo-token-hash').textContent = result.policy_hash;
+        document.getElementById('demo-token-expires').textContent = new Date(result.expires_at).toLocaleString();
+        
+        // Show output section
+        document.getElementById('demo-token-output').style.display = 'block';
+        
+        console.log('✅ Demo token issued:', result);
+        
+    } catch (error) {
+        console.error('❌ Demo token issuance failed:', error);
+        alert(`Failed to issue demo token:\n\n${error.message}`);
+    } finally {
+        issueDemoTokenBtn.classList.remove('loading');
+        issueDemoTokenBtn.textContent = 'Issue Demo Token';
+        issueDemoTokenBtn.disabled = false;
+    }
+});
+
+// Copy demo token
+const copyDemoTokenBtn = document.getElementById('copy-demo-token-btn');
+copyDemoTokenBtn?.addEventListener('click', () => {
+    if (currentDemoToken) {
+        navigator.clipboard.writeText(currentDemoToken).then(() => {
+            copyDemoTokenBtn.textContent = '✅ Copied!';
+            setTimeout(() => {
+                copyDemoTokenBtn.textContent = '📋 Copy';
+            }, 2000);
+        });
+    }
+});
+
+// Toggle full token view
+const toggleFullTokenBtn = document.getElementById('toggle-full-token-btn');
+const demoTokenCompact = document.getElementById('demo-token-compact');
+const demoTokenFull = document.getElementById('demo-token-full');
+
+toggleFullTokenBtn?.addEventListener('click', () => {
+    if (demoTokenFull.style.display === 'none') {
+        demoTokenCompact.style.display = 'none';
+        demoTokenFull.style.display = 'block';
+        toggleFullTokenBtn.textContent = '👁️ Show Compact';
+    } else {
+        demoTokenCompact.style.display = 'block';
+        demoTokenFull.style.display = 'none';
+        toggleFullTokenBtn.textContent = '👁️ Show Full';
+    }
+});
+
+// Verify demo token
+const verifyDemoTokenBtn = document.getElementById('verify-demo-token-btn');
+verifyDemoTokenBtn?.addEventListener('click', async () => {
+    if (!currentDemoToken || !currentPolicy) {
+        alert('No demo token to verify');
+        return;
+    }
+    
+    // Switch to Policy Tester tab and fill in the token
+    document.getElementById('tester-token').value = currentDemoToken;
+    
+    // Pre-fill request parameters from policy
+    if (currentPolicy.actions && currentPolicy.actions.length > 0) {
+        document.getElementById('tester-action').value = currentPolicy.actions[0];
+    }
+    if (currentPolicy.limits?.per_txn) {
+        document.getElementById('tester-amount').value = currentPolicy.limits.per_txn.amount;
+        document.getElementById('tester-currency').value = currentPolicy.limits.per_txn.currency;
+    }
+    if (currentPolicy.resources && currentPolicy.resources.length > 0) {
+        const resource = currentPolicy.resources[0];
+        document.getElementById('tester-resource-type').value = resource.type;
+        if (resource.match?.ids && resource.match.ids.length > 0) {
+            document.getElementById('tester-resource-id').value = resource.match.ids[0];
+        }
+    }
+    
+    // Switch tab
+    switchToPolicyTester();
+    
+    // Auto-trigger verification
+    setTimeout(() => {
+        document.getElementById('test-policy-btn').click();
+    }, 500);
+});
+
+// External token verification
+const verifyExternalTokenBtn = document.getElementById('verify-external-token-btn');
+verifyExternalTokenBtn?.addEventListener('click', async () => {
+    const token = document.getElementById('external-token-input').value.trim();
+    
+    if (!token) {
+        alert('Please paste a token');
+        return;
+    }
+    
+    // Decode and display
+    try {
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            throw new Error('Invalid token format');
+        }
+        
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        
+        alert(`Token decoded!\n\nIssuer: ${payload.iss || 'N/A'}\nUser: ${payload.user}\nAgent: ${payload.agent}\n\nSwitch to Policy Tester to verify.`);
+        
+        // Pre-fill in Policy Tester
+        document.getElementById('tester-token').value = token;
+        
+    } catch (error) {
+        alert(`Failed to decode token:\n\n${error.message}`);
+    }
+});
+
+// Note: buildPolicyBtn listener above already stores currentPolicy
 

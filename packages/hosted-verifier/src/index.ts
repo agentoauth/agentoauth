@@ -11,6 +11,8 @@ import { evaluatePolicyStateless, hashPolicy, canonicalizePolicy } from './polic
 import { signReceipt, createReceiptId } from './policy/receipts.js';
 import { PolicyState } from './policy-state.js';
 import { validateIntentBasic } from './intent/validator.js';
+// Demo issuer for playground
+import { getDemoIssuerPublicJWK, signDemoToken, DEMO_ISSUER_ID, DEMO_ISSUER_KID } from './demo-issuer.js';
 
 interface Env {
   RATE_LIMIT_KV: KVNamespace;
@@ -20,6 +22,7 @@ interface Env {
   POLICY_STATE: DurableObjectNamespace<PolicyState>;
   SIGNING_PRIVATE_KEY: string;
   SIGNING_KID: string;
+  DEMO_ISSUER_PRIVATE_KEY?: string; // Demo issuer key for playground
   ASSETS: Fetcher;
 }
 
@@ -277,16 +280,51 @@ app.post('/verify', async (c) => {
       }, 429);
     }
     
-    // 5. Verify AgentOAuth token (simplified for Workers environment)
+    // 5. Verify AgentOAuth token
     let verificationResult;
+    let isDemoToken = false;
     
     try {
-      // For now, decode and validate token structure
-      // In production, this would do full signature verification
+      // Decode token first to check issuer
       const { header, payload } = decode(token);
       
-      // Basic validation
-      const now = Math.floor(Date.now() / 1000);
+      // Check if this is a demo token
+      if (payload.iss === DEMO_ISSUER_ID) {
+        isDemoToken = true;
+        console.log('🎓 Demo token detected, using demo issuer verification');
+        
+        // For demo tokens, verify signature using demo JWKS
+        try {
+          const { jwtVerify, createLocalJWKSet } = await import('jose');
+          const demoPublicJWK = await getDemoIssuerPublicJWK(c.env as any);
+          const jwks = createLocalJWKSet({ keys: [demoPublicJWK] });
+          
+          // Verify signature - this will throw if invalid
+          const verified = await jwtVerify(token, jwks, {
+            issuer: DEMO_ISSUER_ID,
+            clockTolerance: 60
+          });
+          
+          console.log('✅ Demo token signature verified');
+          // Signature is valid, continue to basic validation below
+        } catch (verifyError) {
+          // Signature verification failed - reject immediately
+          console.error('❌ Demo token signature verification failed:', verifyError);
+          verificationResult = {
+            valid: false,
+            error: {
+              message: 'Demo token signature verification failed',
+              code: 'INVALID_SIGNATURE',
+              suggestion: 'Token may have been tampered with or is malformed'
+            }
+          };
+          // Skip basic validation and return error immediately
+        }
+      }
+      
+      // Basic validation (only if signature verification passed or wasn't checked)
+      if (!verificationResult) {
+        const now = Math.floor(Date.now() / 1000);
       
       if (payload.exp < now) {
         verificationResult = {
@@ -322,6 +360,7 @@ app.post('/verify', async (c) => {
           payload: payload
         };
       }
+      } // Close if (!verificationResult) block
     } catch (error) {
       verificationResult = {
         valid: false,
@@ -506,6 +545,12 @@ app.post('/verify', async (c) => {
           response.remaining_budget = doDecision.remaining;
         }
         
+        // Add demo token warning
+        if (isDemoToken) {
+          response.demo_token = true;
+          response.warning = '⚠️ This is a demo token for educational purposes only. Not for production use.';
+        }
+        
         return c.json(response);
       } catch (error) {
         console.error('Policy evaluation error:', error);
@@ -519,12 +564,20 @@ app.post('/verify', async (c) => {
     // 8. Return result (legacy tokens without policy)
     if (verificationResult.valid) {
       statusCode = 200;
-      return c.json({
+      const response: any = {
         valid: true,
         payload: verificationResult.payload,
         verifiedBy: 'agentoauth.org',
         timestamp: new Date().toISOString()
-      });
+      };
+      
+      // Add demo token warning
+      if (isDemoToken) {
+        response.demo_token = true;
+        response.warning = '⚠️ This is a demo token for educational purposes only. Not for production use.';
+      }
+      
+      return c.json(response);
     } else {
       statusCode = 400;
       errorCode = verificationResult.error?.code;
@@ -975,6 +1028,131 @@ app.get('/usage', async (c) => {
   }
 });
 
+// ============================================================================
+// PLAYGROUND ENDPOINTS (Demo Token Issuance)
+// ============================================================================
+
+/**
+ * POST /playground/issue-demo-token
+ * 
+ * Issues a demo consent token for playground testing.
+ * Demo tokens are server-signed and clearly marked for educational use only.
+ */
+app.post('/playground/issue-demo-token', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { policy, user_id, agent_id, expires_in } = body;
+    
+    // Validate policy is provided
+    if (!policy || typeof policy !== 'object') {
+      return c.json({
+        error: 'Policy is required',
+        code: 'INVALID_REQUEST',
+        hint: 'Include a valid pol.v0.2 policy object in the request body'
+      }, 400);
+    }
+    
+    // Rate limiting for playground (100/hour per IP)
+    const clientIP = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+    const rateLimiter = new RateLimiter(c.env.RATE_LIMIT_KV);
+    const playgroundLimit = await rateLimiter.checkIPLimit(clientIP, {
+      perMinute: 10,  // 10 tokens per minute
+      perHour: 100    // 100 tokens per hour
+    });
+    
+    if (!playgroundLimit.allowed) {
+      return c.json({
+        error: 'Rate limit exceeded for playground demo tokens',
+        code: 'RATE_LIMIT_EXCEEDED',
+        reason: playgroundLimit.reason,
+        retry_after: playgroundLimit.resetTime
+      }, 429);
+    }
+    
+    // Validate policy structure
+    if (!policy.version || policy.version !== 'pol.v0.2') {
+      return c.json({
+        error: 'Invalid policy version',
+        code: 'INVALID_POLICY',
+        hint: 'Policy must have version: "pol.v0.2"'
+      }, 400);
+    }
+    
+    if (!policy.actions || !Array.isArray(policy.actions) || policy.actions.length === 0) {
+      return c.json({
+        error: 'Policy must include at least one action',
+        code: 'INVALID_POLICY'
+      }, 400);
+    }
+    
+    // Compute policy hash
+    const policyHash = await hashPolicy(policy);
+    
+    // Build token payload
+    const now = Math.floor(Date.now() / 1000);
+    const exp = now + (expires_in || 3600); // Default 1 hour
+    
+    const payload = {
+      ver: 'act.v0.2',
+      iss: DEMO_ISSUER_ID,
+      jti: crypto.randomUUID(),
+      user: user_id || 'demo-user',
+      agent: agent_id || 'demo-agent',
+      scope: policy.actions.join(','),
+      aud: 'playground.demo',
+      exp,
+      nonce: crypto.randomUUID(),
+      policy,
+      policy_hash: policyHash
+    };
+    
+    // Sign token with demo issuer key
+    const token = await signDemoToken(payload, c.env as any);
+    
+    // Note: Rate limiting already tracked by checkIPLimit above
+    
+    return c.json({
+      token,
+      policy_hash: policyHash,
+      issuer: DEMO_ISSUER_ID,
+      kid: DEMO_ISSUER_KID,
+      expires_at: new Date(exp * 1000).toISOString(),
+      demo: true,
+      warning: '⚠️ This is a demo token for educational purposes only. Not for production use.'
+    });
+    
+  } catch (error) {
+    console.error('Demo token issuance error:', error);
+    return c.json({
+      error: error instanceof Error ? error.message : 'Failed to issue demo token',
+      code: 'SERVER_ERROR'
+    }, 500);
+  }
+});
+
+/**
+ * GET /playground/.well-known/jwks.json
+ * 
+ * Returns demo issuer public key in JWKS format for playground token verification.
+ */
+app.get('/playground/.well-known/jwks.json', async (c) => {
+  try {
+    const publicJWK = await getDemoIssuerPublicJWK(c.env as any);
+    
+    return c.json({
+      keys: [publicJWK]
+    }, 200, {
+      'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+    });
+  } catch (error) {
+    console.error('Demo JWKS endpoint error:', error);
+    return c.json({
+      error: 'Demo issuer not configured',
+      code: 'SERVER_ERROR'
+    }, 500);
+  }
+});
+
 // 404 handler
 app.notFound((c) => {
   return c.json({
@@ -985,7 +1163,9 @@ app.notFound((c) => {
       'GET /.well-known/jwks.json - Public keys for verification', 
       'POST /verify - Verify AgentOAuth tokens (requires API key)',
       'GET /usage - Check API key usage (requires API key)',
-      'GET /terms - Terms of service'
+      'GET /terms - Terms of service',
+      'POST /playground/issue-demo-token - Issue demo tokens (educational)',
+      'GET /playground/.well-known/jwks.json - Demo issuer public key'
     ],
     docs: 'https://verifier.agentoauth.org/terms'
   }, 404);
@@ -999,8 +1179,12 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     
-    // Try to serve static assets first for /docs, /play, and /
-    if (url.pathname.startsWith('/docs') || url.pathname.startsWith('/play') || url.pathname === '/') {
+    // Try to serve static assets first for /docs, /play (but not /playground API routes), and /
+    const isStaticAsset = url.pathname === '/' || 
+                          url.pathname.startsWith('/docs') || 
+                          (url.pathname.startsWith('/play') && !url.pathname.startsWith('/playground'));
+    
+    if (isStaticAsset) {
       try {
         // Check if assets binding is available
         if (!env.ASSETS) {

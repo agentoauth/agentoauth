@@ -65,9 +65,14 @@ ENVIRONMENT = "production"
 # - AUDIT_SALT: Random string for hashing PII in audit logs
 # - SIGNING_PRIVATE_KEY: JWK for signing receipts
 # - SIGNING_KID: Key ID for receipt signing
+# - DEMO_ISSUER_PRIVATE_KEY: Base64-encoded JWK for playground demo token issuance (generate with: node scripts/generate-demo-key.js)
 
 # Example commands to set secrets:
 # wrangler secret put API_KEY_PUBLIC_KEY --env production
 # wrangler secret put AUDIT_SALT --env production
 # wrangler secret put SIGNING_PRIVATE_KEY --env production
 # wrangler secret put SIGNING_KID --env production
+# wrangler secret put DEMO_ISSUER_PRIVATE_KEY --env production
+
+# For local development, add DEMO_ISSUER_PRIVATE_KEY to .dev.vars:
+# DEMO_ISSUER_PRIVATE_KEY=<base64-encoded-private-jwk>

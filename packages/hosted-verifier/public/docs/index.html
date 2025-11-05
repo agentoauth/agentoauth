@@ -278,11 +278,84 @@ const { token } = await issueConsent({
 
 console.log('Token created:', token);</code></pre>
 
-      <p class="note">
-        <strong>Note:</strong> The hosted verifier does NOT create tokens (for security). 
-        Use the SDK or run a local verifier for testing. 
-        See <a href="https://github.com/agentoauth/agentoauth/tree/main/packages/examples" target="_blank">examples/</a> for more.
+    </section>
+
+    <!-- Playground Demo Tokens -->
+    <section class="content-section">
+      <h2>Playground Demo Tokens</h2>
+      <p>
+        Want to test the full flow without setting up the SDK? The <a href="/play">AgentOAuth Playground</a> 
+        now supports <strong>demo token issuance</strong> for educational purposes!
       </p>
+
+      <div class="demo-feature">
+        <h4>How it Works</h4>
+        <ol>
+          <li><strong>Build a policy</strong> using the Policy Builder form</li>
+          <li><strong>Issue a demo token</strong> - server-signed with a dedicated demo issuer key</li>
+          <li><strong>Verify the token</strong> - test policy evaluation in real-time</li>
+          <li><strong>See the full flow</strong> - policy → token → verification → receipt</li>
+        </ol>
+      </div>
+
+      <div class="warning-box">
+        <strong>⚠️ Demo Tokens are Educational Only</strong>
+        <p>
+          Demo tokens are signed with <code>iss: https://demo.agentoauth.org</code> and clearly 
+          marked for testing. They provide a safe way to learn the protocol without managing keys.
+        </p>
+        <p>
+          <strong>For production:</strong> Use the SDK to generate tokens with your own issuer identity and keys.
+        </p>
+      </div>
+
+      <h4>Demo Token API</h4>
+      <p>You can also issue demo tokens programmatically:</p>
+
+      <pre><code class="bash"># Issue a demo token (100/hour rate limit per IP)
+curl -X POST https://verifier.agentoauth.org/playground/issue-demo-token \
+  -H "Content-Type: application/json" \
+  -d '{
+    "policy": {
+      "version": "pol.v0.2",
+      "id": "pol_demo_001",
+      "actions": ["payments.send"],
+      "resources": [],
+      "limits": {
+        "per_txn": { "amount": 500, "currency": "USD" }
+      }
+    },
+    "user_id": "demo-user",
+    "agent_id": "demo-agent",
+    "expires_in": 3600
+  }'</code></pre>
+
+      <h4>Demo Issuer JWKS</h4>
+      <p>Demo tokens are signed with a dedicated demo issuer key. Public key available at:</p>
+      <pre><code>https://verifier.agentoauth.org/playground/.well-known/jwks.json</code></pre>
+
+      <div class="comparison">
+        <div class="comparison-item">
+          <h4>Demo Tokens</h4>
+          <ul>
+            <li>✅ Perfect for learning the protocol</li>
+            <li>✅ No key management needed</li>
+            <li>✅ Server-signed (secure)</li>
+            <li>✅ Verifiable by hosted verifier</li>
+            <li>⚠️ Educational use only</li>
+          </ul>
+        </div>
+        <div class="comparison-item highlight">
+          <h4>Production Tokens (SDK)</h4>
+          <ul>
+            <li>✅ Your own issuer identity</li>
+            <li>✅ Your own signing keys</li>
+            <li>✅ Full control and portability</li>
+            <li>✅ Production-ready</li>
+            <li>📘 Requires SDK setup</li>
+          </ul>
+        </div>
+      </div>
     </section>
 
     <!-- Free Tier -->
