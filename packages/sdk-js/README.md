@@ -5,10 +5,14 @@ JavaScript/TypeScript SDK for the AgentOAuth protocol.
 ## Installation
 
 ```bash
-npm install @agentoauth/sdk
+npm install @agentoauth/sdk jose ajv
 # or
-pnpm add @agentoauth/sdk
+pnpm add @agentoauth/sdk jose ajv
+# or
+yarn add @agentoauth/sdk jose ajv
 ```
+
+**Note:** This SDK requires `jose` and `ajv` as peer dependencies. They must be installed separately to avoid bundling issues in serverless environments.
 
 ## Quick Start
 

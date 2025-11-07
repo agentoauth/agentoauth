@@ -29,12 +29,14 @@
     "lint": "tsc --noEmit",
     "postbuild": "node scripts/build-esm.js || true"
   },
-  "dependencies": {
+  "peerDependencies": {
     "jose": "^5.2.0",
     "ajv": "^8.12.0"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "jose": "^5.2.0",
+    "ajv": "^8.12.0",
     "tsup": "^8.0.1",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"
