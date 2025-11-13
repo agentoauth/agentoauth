@@ -12,6 +12,46 @@ A neutral protocol for AI agents to prove who authorized what. AgentOAuth provid
 
 **Previous v0.7 (Phase 2A)**: Policy Support - programmable consent with pol.v0.2 schema, policy evaluation engine, JWS receipts, budget tracking
 
+## ⚡ Quick Start: Hello World
+
+**See AgentOAuth in action in under 5 minutes:**
+
+```bash
+git clone https://github.com/agentoauth/agentoauth
+cd agentoauth
+pnpm install
+node packages/examples/hello-world.js
+```
+
+**Expected Output:**
+```
+--- AgentOAuth Hello World ---
+
+Policy:
+• Allow agent "demo-agent" to pay up to $200/week
+• Merchant: merchant.example
+
+Attempt #1:
+Agent tries to pay: $150
+→ Decision: ALLOW
+→ Reason: Within policy limit
+→ Receipt ID: rcp_7kfj3sd
+
+Attempt #2:
+Agent tries to pay: $500
+→ Decision: DENY
+→ Error Code: POLICY_DENY
+→ Reason: Payment amount exceeds weekly limit of $200
+```
+
+This demo shows:
+- ✅ Policy creation with limits
+- ✅ Token issuance with embedded policy
+- ✅ Verification using hosted verifier
+- ✅ Clear ALLOW/DENY decisions with reasons
+
+**No setup required** - just run the command and see how AgentOAuth enforces scoped consent!
+
 ## 🚀 5-Minute Quickstart
 
 **Four ways to get started - choose your platform:**
