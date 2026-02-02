@@ -50,14 +50,16 @@ export function LogPanel({ logs, className }: LogPanelProps) {
   
   return (
     <div className={`bg-white rounded-lg shadow-lg overflow-hidden flex flex-col ${className || 'h-[600px]'}`}>
-      <div className="px-6 py-4 bg-gray-900 text-white flex items-center gap-2">
-        <Terminal className="w-5 h-5" />
-        <h3 className="font-bold">Agent Logs</h3>
+      <div className="px-6 py-4 bg-gray-800 text-white flex items-center gap-2">
+        <Terminal className="w-5 h-5 text-gray-400" />
+        <h3 className="font-bold">Debug Trace (Non-Authoritative)</h3>
         <div className="ml-auto text-xs text-gray-400">
           {logs.length} events
         </div>
       </div>
-      
+      <div className="px-4 py-2 bg-amber-50 border-b border-amber-200 text-xs text-amber-800">
+        Logs are for troubleshooting only. Audit and compliance decisions should rely on the signed authority receipt.
+      </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-2 bg-gray-50">
         <AnimatePresence initial={false}>
           {logs.map((log, index) => (

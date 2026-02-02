@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     } catch (parseError) {
       return NextResponse.json({
         error: 'Failed to parse GPT-4 response',
-        details: parseError.message,
+        details: parseError instanceof Error ? parseError.message : String(parseError),
         raw_response: result.content.toString()
       }, { status: 500 });
     }

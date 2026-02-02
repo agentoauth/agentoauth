@@ -3,24 +3,34 @@
 import { motion } from 'framer-motion';
 import { User, Brain, Fingerprint, PenTool, ShieldCheck, Store, Check, Info } from 'lucide-react';
 import { useState } from 'react';
-
 interface FlowProgressBarProps {
   completedSteps: string[];
   currentStep: string | null;
   onSignatureClick?: () => void;
+  mode?: 'payments' | 'claims';
 }
 
-export function FlowProgressBar({ completedSteps, currentStep, onSignatureClick }: FlowProgressBarProps) {
+const STEPS_PAYMENTS = [
+  { id: 'input', icon: User, label: 'User Input', description: 'Describe policy needs' },
+  { id: 'ai', icon: Brain, label: 'AI Generate', description: 'GPT-4 creates JSON' },
+  { id: 'approval', icon: Fingerprint, label: 'User Approval', description: 'Passkey approval with time limit' },
+  { id: 'signing', icon: PenTool, label: 'Agent Sign', description: 'Intent signature', hasSignature: true },
+  { id: 'verification', icon: ShieldCheck, label: 'Verify', description: 'Policy check + signature', hasSignature: true },
+  { id: 'payment', icon: Store, label: 'Payment', description: 'Stripe processes' }
+];
+
+const STEPS_CLAIMS = [
+  { id: 'input', icon: User, label: 'Claim Context', description: 'Claim context at decision time' },
+  { id: 'ai', icon: Brain, label: 'Authority Check', description: 'Policy evaluation' },
+  { id: 'approval', icon: Fingerprint, label: '(Optional Approval)', description: 'Passkey approval with time limit' },
+  { id: 'signing', icon: PenTool, label: 'Agent Sign', description: 'Intent signature', hasSignature: true },
+  { id: 'verification', icon: ShieldCheck, label: 'Verify', description: 'Policy check + signature', hasSignature: true },
+  { id: 'payment', icon: Store, label: 'Authority Granted', description: 'Settlement authorized' }
+];
+
+export function FlowProgressBar({ completedSteps, currentStep, onSignatureClick, mode = 'payments' }: FlowProgressBarProps) {
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
-  
-  const steps = [
-    { id: 'input', icon: User, label: 'User Input', description: 'Describe policy needs' },
-    { id: 'ai', icon: Brain, label: 'AI Generate', description: 'GPT-4 creates JSON' },
-    { id: 'approval', icon: Fingerprint, label: 'User Approval', description: 'Passkey approval with time limit' },
-    { id: 'signing', icon: PenTool, label: 'Agent Sign', description: 'Intent signature', hasSignature: true },
-    { id: 'verification', icon: ShieldCheck, label: 'Verify', description: 'Policy check + signature', hasSignature: true },
-    { id: 'payment', icon: Store, label: 'Payment', description: 'Stripe processes' }
-  ];
+  const steps = mode === 'claims' ? STEPS_CLAIMS : STEPS_PAYMENTS;
   
   const getStepStatus = (stepId: string) => {
     if (completedSteps.includes(stepId)) return 'completed';

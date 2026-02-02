@@ -1,14 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense, useEffect } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Play, RotateCcw, ExternalLink, Sparkles, ChevronDown, ChevronUp, Fingerprint } from 'lucide-react';
 import { InvoiceTable, type Invoice } from '@/components/InvoiceTable';
+import { ClaimsTable, type Claim, type ClaimDecisionStatus } from '@/components/ClaimsTable';
 import { PolicyCard } from '@/components/PolicyCard';
 import { LogPanel, type LogEntry } from '@/components/LogPanel';
 import { FlowProgressBar } from '@/components/FlowProgressBar';
 import { SignatureExplainerModal } from '@/components/SignatureExplainerModal';
 import { IntentApprover } from '@/components/IntentApprover';
+import { OpenProofPanel, type OpenProofData } from '@/components/OpenProofPanel';
 import type { IntentV0 } from '@agentoauth/sdk/browser';
+
+export type DemoMode = 'payments' | 'claims';
 
 // Initial invoice data
 const INITIAL_INVOICES: Invoice[] = [
@@ -38,41 +43,108 @@ const INITIAL_INVOICES: Invoice[] = [
   }
 ];
 
-// Example policy prompts
+// Example policy prompts (payments)
 const EXAMPLE_PROMPTS = [
   "Travel expenses: max $500 per booking, $2000/week, only Airbnb, Expedia, Uber",
   "SaaS subscriptions: max $100/month per service, only Stripe, AWS, Vercel",
   "Team lunch budget: max $50 per person, $500/week, only Uber Eats, DoorDash"
 ];
 
+// Example policy prompts (claims mode)
+const CLAIMS_EXAMPLE_PROMPTS = [
+  "Auto-settle home insurance claims under $1,000 only when coverage is confirmed and documentation is complete.",
+  "Require approval for settlements over $1,000",
+  "Deny if documentation incomplete",
+  "Business hours only"
+];
+
+// Initial claims data (claims mode)
+const INITIAL_CLAIMS: Claim[] = [
+  { claim_id: 'CLM-91823', loss_type: 'Water damage', amount: 742, currency: 'USD', coverage_confirmed: true, docs_complete: true, status: 'pending' },
+  { claim_id: 'CLM-91824', loss_type: 'Fire damage', amount: 1700, currency: 'USD', coverage_confirmed: true, docs_complete: true, status: 'pending' },
+  { claim_id: 'CLM-91825', loss_type: 'Water damage', amount: 600, currency: 'USD', coverage_confirmed: true, docs_complete: true, status: 'pending' }
+];
+
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen p-8 flex items-center justify-center text-white">Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
+  );
+}
+
+function DashboardContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const mode: DemoMode = searchParams.get('mode') === 'claims' ? 'claims' : 'payments';
+
+  const setMode = (newMode: DemoMode) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newMode === 'payments') {
+      params.delete('mode');
+    } else {
+      params.set('mode', newMode);
+    }
+    const q = params.toString();
+    router.push(q ? `?${q}` : window.location.pathname);
+  };
+
   const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
+  const [claims, setClaims] = useState<Claim[]>(INITIAL_CLAIMS);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [processing, setProcessing] = useState(false);
-  
+
   // Policy generation state
   const [policyInput, setPolicyInput] = useState('');
   const [generatedPolicy, setGeneratedPolicy] = useState<any>(null);
   const [generatingPolicy, setGeneratingPolicy] = useState(false);
   const [showExamples, setShowExamples] = useState(true);
-  
+
   // Intent approval state
   const [userIntent, setUserIntent] = useState<IntentV0 | null>(null);
   const [showIntentApprover, setShowIntentApprover] = useState(false);
   const [simulateExpired, setSimulateExpired] = useState(false);
-  
+
   // Flow tracking
   const [completedSteps, setCompletedSteps] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState<string | null>(null);
   const [showSignatureModal, setShowSignatureModal] = useState(false);
-  
+  const [openProofData, setOpenProofData] = useState<OpenProofData | null>(null);
+  const [showOpenProof, setShowOpenProof] = useState(false);
+
+  // In claims mode, ensure policy includes "claims" so intent and verifier use the same policy hash
+  useEffect(() => {
+    if (mode !== 'claims' || !generatedPolicy?.resources?.[0]?.match?.ids) return;
+    const ids = generatedPolicy.resources[0].match.ids;
+    if (Array.isArray(ids) && ids.includes('claims')) return;
+    setGeneratedPolicy({
+      ...generatedPolicy,
+      resources: [
+        {
+          ...generatedPolicy.resources[0],
+          match: {
+            ...generatedPolicy.resources[0].match,
+            ids: [...ids, 'claims']
+          }
+        }
+      ]
+    });
+    setUserIntent(null);
+  }, [mode, generatedPolicy]);
+
   const addLog = (type: LogEntry['type'], message: string) => {
     setLogs(prev => [...prev, { type, message, timestamp: Date.now() }]);
   };
   
   const updateInvoiceStatus = (id: string, updates: Partial<Invoice>) => {
-    setInvoices(prev => prev.map(inv => 
+    setInvoices(prev => prev.map(inv =>
       inv.invoice_id === id ? { ...inv, ...updates } : inv
+    ));
+  };
+
+  const updateClaimStatus = (id: string, updates: Partial<Claim>) => {
+    setClaims(prev => prev.map(c =>
+      c.claim_id === id ? { ...c, ...updates } : c
     ));
   };
   
@@ -98,7 +170,22 @@ export default function DashboardPage() {
         throw new Error(error.error || 'Failed to generate policy');
       }
       
-      const policy = await response.json();
+      let policy = await response.json();
+      // In claims mode, add "claims" to allowed resources before approval so intent binds to the same policy we send to the verifier
+      if (mode === 'claims' && policy?.resources?.[0]?.match?.ids) {
+        policy = {
+          ...policy,
+          resources: [
+            {
+              ...policy.resources[0],
+              match: {
+                ...policy.resources[0].match,
+                ids: Array.from(new Set([...policy.resources[0].match.ids, 'claims']))
+              }
+            }
+          ]
+        };
+      }
       setGeneratedPolicy(policy);
       setCompletedSteps(['input', 'ai']);
       setCurrentStep(null);
@@ -143,10 +230,11 @@ export default function DashboardPage() {
     setLogs([]);
     setCurrentStep('signing');
     
-    // Reset invoices
+    // Reset invoices / claims
     setInvoices(INITIAL_INVOICES);
-    
-    addLog('info', '🚀 Starting invoice processing...');
+    setClaims(INITIAL_CLAIMS);
+
+    addLog('info', mode === 'claims' ? '🚀 Starting claims processing...' : '🚀 Starting invoice processing...');
     
     // Log intent status
     if (userIntent) {
@@ -162,7 +250,9 @@ export default function DashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           policy: generatedPolicy,
-          intent: userIntent // Pass intent to backend
+          intent: userIntent,
+          mode,
+          ...(mode === 'claims' && { claims })
         })
       });
       
@@ -200,33 +290,61 @@ export default function DashboardPage() {
                 }
                 break;
                 
-              case 'invoice_start':
-                updateInvoiceStatus(data.invoice_id, { status: 'verifying' });
-                addLog('info', `🔍 Processing ${data.invoice_id}...`);
+              case 'invoice_start': {
+                const id = data.invoice_id ?? data.claim_id;
+                if (id) {
+                  if (mode === 'claims') {
+                    updateClaimStatus(id, { status: 'verifying' });
+                  } else {
+                    updateInvoiceStatus(id, { status: 'verifying' });
+                  }
+                  addLog('info', `🔍 Processing ${id}...`);
+                }
                 if (!completedSteps.includes('verification')) {
                   setCurrentStep('verification');
                 }
                 break;
-                
+              }
               case 'invoice_complete':
-                updateInvoiceStatus(data.invoice_id, {
-                  status: data.status === 'PAID' ? 'paid' : 'denied',
-                  receipt_id: data.receipt_id,
-                  reason: data.reason,
-                  stripe_payment_id: data.stripe_payment_id
-                });
-                
+              case 'claim_complete': {
+                const id = data.claim_id ?? data.invoice_id;
+                if (!id) break;
+                const allowed = data.status === 'PAID' || data.status === 'ALLOW';
+                if (mode === 'claims') {
+                  updateClaimStatus(id, {
+                    status: data.status === 'BLOCKED' ? 'blocked' : allowed ? 'allowed' : 'denied',
+                    receipt_id: data.receipt_id,
+                    reason: data.reason,
+                    context_hash: data.context_hash,
+                    context_summary: data.context_summary,
+                    decision_notes: data.decision_notes
+                  });
+                  if (allowed) {
+                    addLog('success', `✅ ${id} allowed ($${data.amount ?? 0})`);
+                  } else if (data.status === 'BLOCKED') {
+                    addLog('warning', `⚠️ ${id} blocked — Authority already consumed`);
+                  } else {
+                    addLog('error', `❌ ${id} denied: ${data.reason ?? 'Policy check failed'}`);
+                  }
+                } else {
+                  updateInvoiceStatus(id, {
+                    status: allowed ? 'paid' : 'denied',
+                    receipt_id: data.receipt_id,
+                    reason: data.reason,
+                    stripe_payment_id: data.stripe_payment_id
+                  });
+                  if (allowed) {
+                    addLog('success', `✅ ${id} paid ($${data.amount})`);
+                  } else {
+                    addLog('error', `❌ ${id} denied: ${data.reason ?? 'Policy check failed'}`);
+                  }
+                }
                 if (!completedSteps.includes('verification')) {
                   setCompletedSteps(prev => [...prev, 'verification']);
                 }
                 setCurrentStep('payment');
-                
-                if (data.status === 'PAID') {
-                  addLog('success', `✅ ${data.invoice_id} paid ($${data.amount})`);
-                } else {
-                  addLog('error', `❌ ${data.invoice_id} denied: ${data.reason}`);
-                }
                 break;
+              }
                 
               case 'complete':
                 addLog('success', `🎉 Complete: ${data.paid} paid, ${data.denied} denied`);
@@ -253,6 +371,7 @@ export default function DashboardPage() {
   
   const handleReset = () => {
     setInvoices(INITIAL_INVOICES);
+    setClaims(INITIAL_CLAIMS);
     setLogs([]);
     setGeneratedPolicy(null);
     setPolicyInput('');
@@ -261,6 +380,24 @@ export default function DashboardPage() {
     setSimulateExpired(false);
     setCompletedSteps([]);
     setCurrentStep(null);
+  };
+
+  const handleClaimRowClick = (claim: Claim) => {
+    if (!claim.receipt_id) return;
+    setOpenProofData({
+      receipt_id: claim.receipt_id,
+      decision: claim.status === 'allowed' ? 'ALLOW' : 'DENY',
+      decision_notes: claim.decision_notes,
+      context_summary: claim.context_summary,
+      context_hash: claim.context_hash,
+      signature_verified: true,
+      policy_id: generatedPolicy?.id ?? undefined,
+      intent_approved_at: userIntent?.approved_at ?? undefined,
+      intent_reference: userIntent
+        ? (userIntent.credential_id ? 'intent_' + userIntent.credential_id.slice(0, 8) : 'intent_present')
+        : undefined
+    });
+    setShowOpenProof(true);
   };
   
   const handleRowClick = (invoice: Invoice) => {
@@ -275,11 +412,39 @@ export default function DashboardPage() {
         {/* Header */}
         <div className="text-white">
           <h1 className="text-4xl font-bold mb-2">
-            🤖 AgentOAuth Invoice Payer
+            {mode === 'payments' ? '🤖 AgentOAuth — Invoice Payer' : 'Tessra — Automated Claims Authority'}
           </h1>
-          <p className="text-primary-100 text-lg">
-            Watch an AI agent autonomously pay invoices with verifiable policy enforcement
+          <p className="text-primary-100 text-lg mb-4">
+            {mode === 'payments'
+              ? 'Watch an AI agent autonomously pay invoices with verifiable policy enforcement'
+              : 'Prove when an automated system was authorized to settle a claim — even months later'}
           </p>
+          {/* Demo Mode Toggle */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium text-primary-100">Demo Mode:</span>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="demoMode"
+                  checked={mode === 'payments'}
+                  onChange={() => setMode('payments')}
+                  className="w-4 h-4 text-primary-600"
+                />
+                <span>Payments (Invoice Payer)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="demoMode"
+                  checked={mode === 'claims'}
+                  onChange={() => setMode('claims')}
+                  className="w-4 h-4 text-primary-600"
+                />
+                <span>Claims Settlement Authority</span>
+              </label>
+            </div>
+          </div>
         </div>
         
         {/* Compact Progress Bar */}
@@ -287,12 +452,20 @@ export default function DashboardPage() {
           completedSteps={completedSteps} 
           currentStep={currentStep}
           onSignatureClick={() => setShowSignatureModal(true)}
+          mode={mode}
         />
         
         {/* Signature Explainer Modal */}
         <SignatureExplainerModal 
           isOpen={showSignatureModal}
           onClose={() => setShowSignatureModal(false)}
+        />
+
+        {/* Open Proof Panel (claims mode) */}
+        <OpenProofPanel
+          isOpen={showOpenProof}
+          onClose={() => { setShowOpenProof(false); setOpenProofData(null); }}
+          data={openProofData}
         />
         
         {/* Split View Layout */}
@@ -303,13 +476,15 @@ export default function DashboardPage() {
             <div className="bg-white rounded-lg shadow-lg p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
               <Sparkles className="w-6 h-6 text-primary-600" />
-              Describe Your Policy
+              {mode === 'payments' ? 'Describe Your Policy' : 'Define Settlement Authority'}
             </h2>
             
             <textarea
               value={policyInput}
               onChange={(e) => setPolicyInput(e.target.value)}
-              placeholder="Example: Travel expenses for my sales team - max $1000 per trip, $5000/month total, only for Airbnb, Uber, and Delta"
+              placeholder={mode === 'payments'
+                ? 'Example: Travel expenses for my sales team - max $1000 per trip, $5000/month total, only for Airbnb, Uber, and Delta'
+                : 'Example: Auto-settle home insurance claims under $1,000 only when coverage is confirmed and documentation is complete.'}
               className="w-full h-32 p-4 border-2 border-gray-300 rounded-lg focus:border-primary-500 focus:ring-2 focus:ring-primary-200 resize-none"
               disabled={generatingPolicy}
             />
@@ -326,7 +501,7 @@ export default function DashboardPage() {
               
               {showExamples && (
                 <div className="mt-3 space-y-2">
-                  {EXAMPLE_PROMPTS.map((prompt, i) => (
+                  {(mode === 'claims' ? CLAIMS_EXAMPLE_PROMPTS : EXAMPLE_PROMPTS).map((prompt, i) => (
                     <button
                       key={i}
                       onClick={() => setPolicyInput(prompt)}
@@ -359,7 +534,7 @@ export default function DashboardPage() {
           
             {/* Generated Policy Card */}
             {generatedPolicy && (
-              <PolicyCard policy={generatedPolicy} />
+              <PolicyCard policy={generatedPolicy} mode={mode} />
             )}
             
             {/* Passkey Approval Section */}
@@ -450,26 +625,32 @@ export default function DashboardPage() {
             </div>
           </div>
           
-          {/* Right Column: Invoice Results & Logs */}
+          {/* Right Column: Results & Logs */}
           <div className="space-y-4">
-            {/* Stripe Dashboard Link */}
-            <a
-              href="https://dashboard.stripe.com/test/payments"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="
-                flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm
-                bg-primary-600 hover:bg-primary-700 text-white
-                transition-all duration-200 shadow-lg hover:shadow-xl
-              "
-            >
-              View Stripe Dashboard
-              <ExternalLink className="w-4 h-4" />
-            </a>
-            
-            {/* Invoice Table */}
+            {/* Stripe Dashboard Link (payments mode only) */}
+            {mode === 'payments' && (
+              <a
+                href="https://dashboard.stripe.com/test/payments"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="
+                  flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm
+                  bg-primary-600 hover:bg-primary-700 text-white
+                  transition-all duration-200 shadow-lg hover:shadow-xl
+                "
+              >
+                View Stripe Dashboard
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+
+            {/* Invoice or Claims Table */}
             <div className="max-h-[400px] overflow-y-auto">
-              <InvoiceTable invoices={invoices} onRowClick={handleRowClick} />
+              {mode === 'payments' ? (
+                <InvoiceTable invoices={invoices} onRowClick={handleRowClick} />
+              ) : (
+                <ClaimsTable claims={claims} onRowClick={handleClaimRowClick} />
+              )}
             </div>
             
             {/* Log Panel */}

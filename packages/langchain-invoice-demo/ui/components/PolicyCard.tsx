@@ -17,14 +17,16 @@ interface PolicyCardProps {
       [key: string]: any;
     };
   };
+  mode?: 'payments' | 'claims';
 }
 
-export function PolicyCard({ policy }: PolicyCardProps) {
+export function PolicyCard({ policy, mode = 'payments' }: PolicyCardProps) {
   const merchants = policy.resources[0]?.match?.ids || [];
   const [showJson, setShowJson] = useState(false);
   const [copied, setCopied] = useState(false);
   
   const isAiGenerated = policy.meta?.generated_by === 'AI';
+  const isClaims = mode === 'claims';
   
   const handleCopyJson = () => {
     navigator.clipboard.writeText(JSON.stringify(policy, null, 2));
@@ -41,7 +43,7 @@ export function PolicyCard({ policy }: PolicyCardProps) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-gray-900">Active Policy</h3>
+              <h3 className="text-lg font-bold text-gray-900">{isClaims ? 'Settlement Authority' : 'Active Policy'}</h3>
               {isAiGenerated && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-purple-100 to-pink-100 text-purple-700 text-xs font-semibold rounded-full">
                   <Sparkles className="w-3 h-3" />
@@ -99,13 +101,13 @@ export function PolicyCard({ policy }: PolicyCardProps) {
       )}
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Per-transaction limit */}
+        {/* Per-transaction / Settlement threshold */}
         <div className="flex items-start gap-3">
           <div className="p-2 bg-green-100 rounded-lg">
             <DollarSign className="w-5 h-5 text-green-700" />
           </div>
           <div>
-            <div className="text-xs text-gray-500 font-medium">Per-transaction</div>
+            <div className="text-xs text-gray-500 font-medium">{isClaims ? 'Settlement threshold' : 'Per-transaction'}</div>
             <div className="text-lg font-bold text-gray-900">
               ${policy.limits.per_txn.amount}
             </div>
@@ -127,14 +129,14 @@ export function PolicyCard({ policy }: PolicyCardProps) {
           </div>
         </div>
         
-        {/* Merchants */}
-        <div className="flex items-start gap-3">
-          <div className="p-2 bg-purple-100 rounded-lg">
+        {/* Merchants / Resources */}
+        <div className="flex items-start gap-3 min-w-0">
+          <div className="p-2 bg-purple-100 rounded-lg flex-shrink-0">
             <Store className="w-5 h-5 text-purple-700" />
           </div>
-          <div>
-            <div className="text-xs text-gray-500 font-medium">Allowed merchants</div>
-            <div className="text-sm font-semibold text-gray-900 mt-1">
+          <div className="min-w-0">
+            <div className="text-xs text-gray-500 font-medium">{isClaims ? 'Allowed resources' : 'Allowed merchants'}</div>
+            <div className="text-sm font-semibold text-gray-900 mt-1 break-words">
               {merchants.slice(0, 2).join(', ')}
               {merchants.length > 2 && (
                 <span className="text-gray-500"> +{merchants.length - 2}</span>

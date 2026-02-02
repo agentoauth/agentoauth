@@ -1,0 +1,29 @@
+[
+  {
+    "claim_id": "CLM-91823",
+    "loss_type": "Water damage",
+    "amount": 742,
+    "currency": "USD",
+    "coverage_confirmed": true,
+    "docs_complete": true,
+    "status": "pending"
+  },
+  {
+    "claim_id": "CLM-91824",
+    "loss_type": "Fire damage",
+    "amount": 1700,
+    "currency": "USD",
+    "coverage_confirmed": true,
+    "docs_complete": true,
+    "status": "pending"
+  },
+  {
+    "claim_id": "CLM-91825",
+    "loss_type": "Water damage",
+    "amount": 600,
+    "currency": "USD",
+    "coverage_confirmed": true,
+    "docs_complete": true,
+    "status": "pending"
+  }
+]

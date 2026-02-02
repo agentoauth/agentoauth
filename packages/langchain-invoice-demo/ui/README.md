@@ -44,7 +44,7 @@ Get your keys from:
 pnpm dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001)
+Open [http://localhost:3001](http://localhost:3001). If the terminal stops at "✓ Starting..." with no "Ready" message, the server is still running—Next.js compiles on first request, so open the URL in your browser and wait for the first load to finish.
 
 ### 4. Start processing
 
