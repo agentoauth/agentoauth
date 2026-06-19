@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: MIT
+# Authority policy for the procurement reorder saga (Analyst -> Finance -> Buyer).
+# This whole document (loaded as a dict) is canonicalized + hashed into policy_hash;
+# keep amounts as integers so the hash stays byte-compatible with AgentOAuth's TS canon.
+version: pol.v0.2
+id: reorder-procurement
+description: >-
+  Per-step authority for a cross-system procurement reorder. Most-restrictive-wins
+  (DENY > CONFIRM > ALLOW). Action-level limits override these policy defaults.
+limits:
+  max_amount: 50000
+  currency: USD
+review_band:
+  # Amounts in this inclusive band require human confirmation (auto-approved in demo).
+  min: 45000
+  max: 50000
+supplier_allowlist:
+  - acme
+  - globex
+  - initech
+rules:
+  # Triggered rules contribute a verdict; the most restrictive across all triggered rules wins.
+  - id: amount_exceeds_limit
+    check: amount_exceeds_limit        # effective amount (quoted price if present) > max_amount
+    verdict: DENY
+  - id: supplier_not_allowlisted
+    check: supplier_not_allowlisted    # action supplier not in the allowlist
+    verdict: DENY
+  - id: budget_insufficient
+    check: budget_insufficient         # live_state.budget_available < amount
+    verdict: DENY
+  - id: amount_in_review_band
+    check: amount_in_review_band       # amount within [review_band.min, review_band.max]
+    verdict: CONFIRM

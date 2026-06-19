@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT
+# Optional MongoDB for the mongo-stub. The demo runs fully offline with mongomock
+# by default; use this only if you want a real Mongo. Then point the app at it:
+#
+#   docker compose up -d
+#   export SAGA_MONGO_URL="mongodb://localhost:27017"
+#   python demos/run_happy.py
+#
+services:
+  mongo:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
