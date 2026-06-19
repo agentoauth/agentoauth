@@ -39,15 +39,23 @@ def _action() -> Action:
     )
 
 
+async def _delegate(url: str):
+    keyring = KeyRing(seed="org-a")
+    return await place_order_via_a2a(
+        supplier_url=url, saga_id="handshake", step_id="buyer",
+        parent_receipt_id=None, action=_action(), keyring=keyring,
+    )
+
+
 async def _run(mode: str) -> int:
-    seed = "handshake-demo"  # reproducible keys across both processes
-    url = f"http://127.0.0.1:{SUPPLIER_PORT}"
-    with supplier_process(mode=mode, port=SUPPLIER_PORT, seed=seed):
-        keyring = KeyRing(seed=seed)
-        outcome = await place_order_via_a2a(
-            supplier_url=url, saga_id="handshake", step_id="buyer",
-            parent_receipt_id=None, action=_action(), keyring=keyring,
-        )
+    external = os.environ.get("SUPPLIER_URL")
+    if external:
+        # Supplier is already running as a separate service (e.g. docker-compose).
+        outcome = await _delegate(external.rstrip("/"))
+    else:
+        # Launch the supplier as a child process for a one-command local demo.
+        with supplier_process(mode=mode, port=SUPPLIER_PORT, seed="org-b"):
+            outcome = await _delegate(f"http://127.0.0.1:{SUPPLIER_PORT}")
 
     print("\n================ AgentOAuth over A2A — handshake ================")
     print(f"  supplier mode      : {mode}")

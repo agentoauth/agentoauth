@@ -1,18 +1,38 @@
 # SPDX-License-Identifier: MIT
-# Optional MongoDB for the mongo-stub. The demo runs fully offline with mongomock
-# by default; use this only if you want a real Mongo. Then point the app at it:
+# Two framework-distinct org agents as SEPARATE containers on one network.
+# The A<->B leg crosses the container network — no in-process shortcut.
 #
-#   docker compose up -d
-#   export SAGA_MONGO_URL="mongodb://localhost:27017"
-#   python demos/run_happy.py
+#   docker compose up --build          # supplier stays up; buyer runs the handshake
 #
+# Set an LLM key (OPENAI_API_KEY / ANTHROPIC_API_KEY) in the environment to switch
+# the CrewAI supplier from deterministic reasoning to real LLM reasoning.
 services:
-  mongo:
-    image: mongo:7
+  supplier:                      # Org B — CrewAI agent, A2A server (responder)
+    build: .
+    command: python -m orgs.supplier.server
+    environment:
+      SUPPLIER_HOST: "0.0.0.0"
+      SUPPLIER_PORT: "9999"
+      SUPPLIER_PUBLIC_URL: "http://supplier:9999/"
+      SUPPLIER_MODE: "${SUPPLIER_MODE:-available}"   # available|out_of_stock|price_violation|timeout
+      SAGA_KEY_SEED: "org-b"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
     ports:
-      - "27017:27017"
+      - "9999:9999"
     healthcheck:
-      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ ping: 1 })"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://127.0.0.1:9999/.well-known/agent-card.json')"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  buyer:                         # Org A — LangGraph agent, A2A client (initiator)
+    build: .
+    command: python demos/run_handshake.py
+    depends_on:
+      supplier:
+        condition: service_healthy
+    environment:
+      SUPPLIER_URL: "http://supplier:9999"
+      SAGA_KEY_SEED: "org-a"

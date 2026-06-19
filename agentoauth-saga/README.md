@@ -1,161 +1,172 @@
-# AgentOAuth Saga Accountability Layer
+# AgentOAuth over A2A — verifiable authority for cross-org agent interactions
 
-> Orchestrators (A2A‑SAGA / Temporal / LangGraph) **coordinate the steps**.
-> AgentOAuth **proves each step's authority and records the reconciled outcome**.
+> **A LangGraph agent and a CrewAI agent — no shared code — establish verifiable
+> authority between them over A2A.** That proves AgentOAuth is a *protocol*, not a library.
 
-A runnable reference implementation that extends [AgentOAuth](https://github.com/agentoauth/agentoauth)'s
-single‑action consent‑token / consent‑receipt primitive from **one action** to a **multi‑step,
-cross‑system saga** — including the partial‑failure‑with‑compensation path. It demonstrates the
-**authority + accountability layer** on a 3‑agent procurement workflow: prove every step was
-authorized, judge whether it was correct, and emit a neutral, self‑verifying record of the true
-reconciled state when compensation half‑fails.
+[A2A](https://github.com/a2aproject/A2A) is the **transport**: how two agents discover
+each other (Agent Cards) and delegate work (Tasks). [AgentOAuth](https://github.com/agentoauth/agentoauth)
+is the **authority layer A2A leaves to implementers**: a policy-bound **Consent Token**
+the initiator attaches, and a signed **Consent Receipt** the responder returns — proving
+what was authorized and what was done, independently verifiable without contacting anyone.
 
-This is the **proof layer, not an orchestrator.** The saga harness here is intentionally thin.
+```
+ORG A  (LangGraph, A2A client)                 ORG B  (CrewAI, A2A server)
+   issue AgentOAuth Consent Token  ──A2A Task + token──▶  verify token BEFORE acting
+   (policy-bound: action ≤ limits)                        reason (CrewAI) over private data
+   verify returned receipt  ◀──── signed Consent Receipt ──── return signed receipt (artifact)
+```
 
----
-
-## What it does
-
-| Command | Scenario | Reconciled state |
-|---|---|---|
-| `python demos/run_happy.py` | All 3 steps authorized + executed | **`COMPLETE`** |
-| `python demos/run_failure.py` | Final step fails → compensate in reverse | **`COMPENSATED`** |
-| `python demos/run_compensation_fails.py` | A reversal is itself irreversible | **`INCONSISTENT`** (unrecovered step flagged) |
-
-Every receipt is an **EdDSA compact JWS** that verifies **offline** against the public JWKS embedded
-in the dump — no call back to the verifier. A CLI and a single static HTML file render the chain.
-
-## Quick start (offline by default)
+## Run the handshake in one command
 
 ```bash
 cd agentoauth-saga
 python -m venv .venv && . .venv/bin/activate
-pip install -e .
+pip install -e ".[a2a,supplier]"
 
-python demos/run_happy.py             # -> COMPLETE
-python demos/run_failure.py           # -> COMPENSATED
-python demos/run_compensation_fails.py # -> INCONSISTENT
-
-# View a dumped chain in the terminal:
-saga-view saga_failure.json
-
-# Or open the static viewer and load a saga*.json (no backend, no storage):
-#   src/agentoauth_saga/viewer/web/index.html
+python demos/run_handshake.py                 # success     → A2A completed, receipt VALID
+python demos/run_handshake.py out_of_stock    # can't fulfil → A2A failed,    receipt VALID
+python demos/run_handshake.py price_violation  # over limit  → A2A rejected,  DENY receipt VALID
 ```
 
-Everything runs with no network, no Docker: in‑process verifier, `mongomock`, and ephemeral keys.
+The supplier runs as a **separate process** — the A↔B leg crosses a real HTTP wire. Every
+authorized outcome returns a signed, self-verifying receipt; even denials and failures are
+accountable. Example success output:
 
-## The worked example
+```
+  A2A task state     : completed
+  decision           : fulfilled (used_llm=False)
+  supplier reasoning : Supplier 'acme' has SKU order:XYZ in stock; quoted 40000 USD, within the authorized limit.
+  receipt verdict    : ALLOW   executed: True
+  receipt SIGNATURE  : VALID ✓ (verified offline against the supplier's verifier key)
+```
 
-Procurement reorder, `saga_id = "reorder-XYZ"`:
+Or run both agents as containers:
 
-1. **Analyst** → `inventory.approve(order:XYZ)` → token → verify → ALLOW → write approval to mongo‑stub → **R1**
-2. **Finance** → `budget.allocate(amount: 40000, limit: 50000)`, `live_state {budget_available: 60000}` → token *(parent R1)* → ALLOW → write invoice to erp‑stub → **R2**
-3. **Buyer** → `order.place(supplier: acme)` → supplier‑stub (configurable failure)
+```bash
+docker compose up --build         # supplier (Org B) stays up; buyer (Org A) runs the handshake
+```
 
-On failure the saga compensates in reverse — `budget.void` (**R2c**, `compensation_of=R2`), then
-`inventory.revert` (**R1c**, `compensation_of=R1`) — and `reconcile()` walks the signed chain to the
-true state. With `compensation_fails=true`, R2's void fails → `INCONSISTENT`, R2 flagged as
-unrecovered (the honest "you can't always roll back" case).
+## Why two different frameworks
+
+The point is **cross-framework interoperability**. Org A is built with **LangGraph**, Org B with
+**CrewAI**; they share no code. They agree only on two open protocols — **A2A** for transport and
+**AgentOAuth** for authority — and that is enough to establish a verifiable, accountable interaction
+across an organization boundary. If it only worked within one framework, it would be a library, not
+a protocol.
+
+## A2A vs AgentOAuth (don't conflate them)
+
+| | A2A | AgentOAuth |
+|---|---|---|
+| Job | **Transport** — discovery (Agent Cards) + delegation (Tasks) | **Authority** — prove a step was authorized + record what was done |
+| Artifact | Task / Message | Consent **Token** (request) + signed Consent **Receipt** (proof) |
+| Leaves to you | *who may do what, and proof of it* | — (this is the layer) |
+
+AgentOAuth here reuses the existing Python implementation: **EdDSA attached compact JWS**, mirroring
+the TypeScript `sdk-js`/`verifier-api`. The consent token rides in the A2A message metadata; the
+supplier verifies it (signature + policy + the crew's quoted price vs. the authorized limit) **before
+acting**, then signs and returns the receipt as the A2A artifact.
+
+## The CrewAI supplier (hybrid reasoning)
+
+The supplier is a real CrewAI agent. With an LLM key (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY`) it reasons
+over its private inventory and justifies the decision; without one it falls back to a deterministic
+decision so the demo runs offline and reproducibly. Either way the supplier's **system of record**
+governs stock (an LLM never invents inventory), and the **security-critical authority check** (token
+signature + quoted price vs. limit) is enforced by the AgentOAuth verifier, not the LLM.
+
+## Deep cut — the saga across two orgs
+
+The multi-step **Analyst → Finance → Buyer** procurement saga, where the Buyer→Supplier leg is the same
+real A2A + CrewAI handshake. `reconcile()` spans both orgs and compensation of Org A's local steps fires
+on a cross-org failure:
+
+```bash
+python demos/run_happy.py               # COMPLETE
+python demos/run_failure.py             # supplier out of stock → COMPENSATED (Finance + Analyst rolled back)
+python demos/run_compensation_fails.py  # ERP void fails        → INCONSISTENT (unrecovered step flagged)
+
+saga-view saga_failure.json             # CLI table, labelled by org · framework
+# or open src/agentoauth_saga/viewer/web/index.html and load a saga*.json (offline, no backend, no storage)
+```
 
 ## Architecture
 
 ```
-demo orchestrator (THIN harness — not the product)
-   │  runs steps; on failure triggers compensation
-   ▼
-multi-agent workflow (LangGraph: Analyst → Finance → Buyer)
-   ▼
-┌──────────────────────────────────────────────┐
-│  AUTHORITY + ACCOUNTABILITY LAYER (the product)│
-│  consent   → issue/sign Consent Token (sig 1)  │
-│  verifier  → validate vs policy (+ live state) │
-│              → issue signed, linked Receipt(s2)│
-│  policy    → ALLOW | CONFIRM | DENY            │
-│  receipts  → linked chain by saga_id           │
-│              + verify_chain() + reconcile()     │
-└──────────────────────────────────────────────┘
-   ▼
-system stubs:  mongo-stub | erp-stub | supplier-stub(failure modes)
-   ▼
-viewer (CLI + static HTML): chain + reconciled state
+orgs/buyer/      LangGraph agent + A2A client   (Org A, initiator)   ── imports langgraph, a2a
+orgs/supplier/   CrewAI agent + A2A server      (Org B, responder)   ── imports crewai, a2a
+orgs/common/     A2A ↔ AgentOAuth bridge (token attach/extract, receipt artifact)
+        │ uses
+        ▼
+src/agentoauth_saga/   CORE — framework- & A2A-agnostic
+  consent · verifier · policy · receipts · reconcile · saga (thin orchestrator) · viewer
 ```
 
-The core (`consent` / `policy` / `verifier` / `receipts` / `systems`) is **framework‑agnostic** and
-**never imports LangGraph** — enforced by `tests/test_layering.py`. Only `agents/` and `saga/` may.
+The core never imports `a2a`, `langgraph`, or `crewai` — enforced by `tests/test_layering.py`. The
+orchestrator delegates the cross-org leg through a `remote_handler` callable, so it stays A2A-agnostic
+while the receipt the remote org signs is linked into the same chain and verified offline.
 
-### Signatures & the chain
-- **Signature 1 (agent):** the Consent Token is an attached EdDSA compact JWS over a signed‑claims
-  subset (`saga.consent.v0`).
-- **Signature 2 (verifier):** the Consent Receipt is an attached EdDSA compact JWS (`receipt.saga.v0`)
-  carrying the policy decision, `consent_token_hash`, and `parent_receipt_id`.
-- `verify_chain()` checks, offline against the embedded public JWKS: every signature, that the signed
-  payload still matches the stored fields (tamper‑evidence), the `parent_receipt_id` linked list, and
-  that each `compensation_of` points at an earlier receipt.
+## Interop with the canonical TypeScript verifier (the truth check)
 
-## Reuse of AgentOAuth — and honest deviations
+`tests/test_interop_ts.py` is **not mocked**. It drives the real TS `canonicalize.ts` and `jose` (the
+library the TS SDK/verifier sign with) to prove:
 
-This project is built to **reuse AgentOAuth's signing/verification — no new crypto.** A few facts
-shaped the implementation; they're called out here for honesty:
+1. canonicalization is **byte-identical** to TS `hashPolicy` (floats, nested objects, unicode, key order);
+2. a **Python-issued** token verifies under the **TS** verifier;
+3. a **TS-issued** token verifies in **Python**.
 
-- **There is no AgentOAuth *Python* SDK** — upstream is TypeScript only. So we re‑implement the
-  **same scheme** (Ed25519/EdDSA **compact JWS**, header `{alg:"EdDSA", kid, typ:"JWT"}`) in Python via
-  `jwcrypto`/`cryptography`. The output is wire‑compatible: a receipt signed here verifies under
-  standard JOSE/WebCrypto (validated in CI‑style checks against Node's native WebCrypto), and our
-  policy canonicalization is **byte‑for‑byte identical** to the TS `canonicalizePolicy`.
-- **The hosted route is `/verify`, not `/verify-consent`** (the PRD's name). The optional
-  `verifier/hosted_adapter.py` posts to `/verify`; the path is env‑overridable (`SAGA_HOSTED_VERIFY_PATH`).
-- **`CONFIRM`** is a saga‑local verdict (AgentOAuth receipts are ALLOW|DENY). It is always decided by
-  the local policy engine and never round‑trips through a hosted verifier. In the demo it
-  auto‑approves with a logged note (`SAGA_AUTO_CONFIRM`, default on).
-- **`price_hallucination`** is a **verify‑time DENY**: the supplier quotes a price that violates the
-  action `limits`, surfaced to the verifier via `live_state["quoted_amount"]`, so the order is denied
-  *before* any side effect. `out_of_stock` / `timeout` are **execution failures** that trigger
-  compensation of prior committed steps.
-- **Execution outcome** (`metadata.exec`) is recorded *after* the authorization decision is signed —
-  the receipt signature covers the decision + linkage; the execution result is a later annotation that
-  `reconcile()` reads.
+```bash
+# from the monorepo root, once:
+pnpm install && pnpm --filter @agentoauth/sdk build
+# then:
+cd agentoauth-saga && pytest tests/test_interop_ts.py
+```
+
+The test skips cleanly when the TS toolchain isn't present, so the Python suite stays green offline.
+
+## Tests
+
+```bash
+pip install -e ".[a2a,supplier,dev]"
+pytest                      # core + policy/reconcile/chain + handshake & saga e2e (real wire) + layering
+pytest tests/test_interop_ts.py   # TS interop (needs the TS build above)
+```
 
 ## Configuration (env, no secrets in code)
 
 | Var | Default | Meaning |
 |---|---|---|
-| `SAGA_VERIFIER` | `local` | `hosted` to use the hosted adapter |
-| `SAGA_HOSTED_VERIFIER_URL` / `SAGA_HOSTED_VERIFY_PATH` | `verifier.agentoauth.org` / `/verify` | hosted endpoint |
-| `SAGA_MONGO_URL` | _(unset → mongomock)_ | real MongoDB for the mongo‑stub |
-| `SAGA_AUTO_CONFIRM` | `1` | auto‑approve CONFIRM in the demo |
-| `SAGA_KEY_SEED` | _(unset → random)_ | deterministic keys for diffable dumps |
-| `SAGA_VERIFIER_PRIVATE_JWK`, `SAGA_AGENT_PRIVATE_JWK_<ID>` | _(unset → ephemeral)_ | bring your own keys |
-| `SAGA_OUT_DIR` | cwd | where demos write `saga*.json` |
+| `SUPPLIER_MODE` | `available` | `available` / `out_of_stock` / `price_violation` / `timeout` |
+| `SUPPLIER_HOST` / `SUPPLIER_PORT` / `SUPPLIER_PUBLIC_URL` | `127.0.0.1` / `9999` / derived | supplier bind + advertised Agent Card URL |
+| `SUPPLIER_URL` | — | buyer connects to an existing supplier (set by docker-compose) |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | — | switch the CrewAI supplier to real LLM reasoning |
+| `SAGA_KEY_SEED` | random | deterministic per-org keys for reproducible runs |
+| `SAGA_OUT_DIR` | cwd | where saga demos write `saga*.json` |
 
 ## Layout
 
 ```
-src/agentoauth_saga/
-  models.py                 # pydantic models + enums
-  consent/  jwk.py keys.py token.py        # JWS/JWK, key ring, token issuance (sig 1)
-  policy/   engine.py canonicalize.py policies/reorder.yaml
-  verifier/ verifier.py policy_eval.py hosted_adapter.py   # decision + receipt (sig 2)
-  receipts/ store.py verify_chain.py reconcile.py
-  saga/     orchestrator.py                 # thin harness (no LangGraph)
-  agents/   graph.py analyst.py finance.py buyer.py        # LangGraph workflow
-  systems/  mongo_stub.py erp_stub.py supplier_stub.py
-  viewer/   cli.py web/index.html
-demos/   run_happy.py run_failure.py run_compensation_fails.py
-tests/   test_policy.py test_receipts_chain.py test_reconcile.py
-         test_verifier.py test_layering.py test_e2e.py
+src/agentoauth_saga/   consent/ verifier/ policy/ receipts/ saga/ viewer/   # core (agnostic)
+orgs/
+  buyer/      client.py graph.py saga.py        # LangGraph + A2A client
+  supplier/   server.py executor.py crew.py inventory.py   # CrewAI + A2A server
+  common/     a2a_consent.py                    # the only A2A↔AgentOAuth bridge
+demos/   run_handshake.py  run_happy.py run_failure.py run_compensation_fails.py
+tests/   test_handshake_e2e.py test_saga_e2e.py test_interop_ts.py test_layering.py
+         test_policy.py test_reconcile.py test_receipts_chain.py test_verifier.py ...
+Dockerfile  docker-compose.yml
 ```
 
-## Tests
+## Notes / honest deviations
 
-```bash
-pip install -e ".[dev]"
-pytest
-```
-
-Covers the policy table (threshold / allowlist / budget / review‑band / price‑hallucination), the
-golden policy‑hash pin, chain signatures + linkage, all four reconcile statuses, the LangGraph
-isolation gate, and the three end‑to‑end scenarios.
+- There is no AgentOAuth *Python* SDK upstream (it's TypeScript). We re-implement the **same** EdDSA
+  compact-JWS scheme in Python (no new crypto) and prove wire-compatibility in `test_interop_ts.py`.
+- `a2a-sdk` is pinned to **0.3.7** (the sample-aligned, pydantic API). The 1.x line is a protobuf
+  rewrite that drops `A2AStarletteApplication`/`A2AClient`.
+- Key distribution is trust-on-first-use for the demo (each signed object carries its signer's public
+  JWK). Production would resolve keys from each org's published JWKS / Agent Card.
+- `CONFIRM` is a saga-local verdict (AgentOAuth receipts are ALLOW/DENY); it's decided by the local
+  policy engine and never round-trips through a remote verifier.
 
 ## License
 

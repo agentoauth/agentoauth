@@ -28,11 +28,22 @@ _STATUS_STYLE = {
 }
 
 
+def org_label(step_id: str) -> str:
+    """Label a step by the org + framework that signed/owns it (best-effort)."""
+    head = step_id.split(".")[0]
+    if head == "buyer":
+        return "Org B · CrewAI"
+    if head in ("analyst", "finance"):
+        return "Org A · LangGraph"
+    return "Org A · LangGraph"  # compensations run on the initiating org
+
+
 def _receipt_table(receipts: list[ConsentReceipt]) -> Table:
     table = Table(title="Receipt chain", show_lines=False, expand=True)
     table.add_column("#", justify="right")
     table.add_column("receipt_id", overflow="fold")
     table.add_column("step")
+    table.add_column("org · framework")
     table.add_column("verdict")
     table.add_column("executed", justify="center")
     table.add_column("compensation_of", overflow="fold")
@@ -44,6 +55,7 @@ def _receipt_table(receipts: list[ConsentReceipt]) -> Table:
             str(i),
             r.receipt_id[:20],
             r.step_id,
+            org_label(r.step_id),
             f"[{style}]{verdict}[/{style}]",
             "✓" if r.executed else "·",
             (r.compensation_of or "")[:20],

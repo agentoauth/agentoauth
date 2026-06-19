@@ -123,6 +123,7 @@ async function render(data) {
   const table = el("table");
   table.append(el("tr", {},
     el("th", {}, "#"), el("th", {}, "receipt_id"), el("th", {}, "step"),
+    el("th", {}, "org · framework"),
     el("th", {}, "verdict"), el("th", {}, "executed"), el("th", {}, "links"),
     el("th", {}, "signature")));
 
@@ -143,10 +144,14 @@ async function render(data) {
       stepCell.append(el("div", { class: "basis" }, r.decision_basis.join(" · ")));
     }
 
+    const head = (r.step_id || "").split(".")[0];
+    const org = head === "buyer" ? "Org B · CrewAI" : "Org A · LangGraph";
+
     table.append(el("tr", {},
       el("td", { class: "mono" }, String(i++)),
       el("td", { class: "mono" }, (r.receipt_id || "").slice(0, 22)),
       stepCell,
+      el("td", {}, org),
       el("td", {}, el("span", { class: "pill " + verdict }, verdict)),
       el("td", {}, r.executed ? "✓" : "·"),
       el("td", {}, links),
