@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT
-"""Compensation-fails path: a reversal is itself irreversible.
+"""Deep-cut compensation-fails path: a reversal is itself irreversible.
 
-The supplier fails (out_of_stock) AND the ERP void-invoice compensation fails, so
-Finance's committed write cannot be rolled back. This is the honest "you can't
-always undo" case.
-
+The cross-org Buyer->Supplier leg fails (out of stock) AND Org A's ERP void-invoice
+compensation fails, so Finance's committed write cannot be rolled back — the honest
+"you can't always undo" case, now spanning two orgs.
 Expected: reconcile == INCONSISTENT, with the unrecovered step (finance) flagged.
 """
 
 from __future__ import annotations
 
-from _common import make_config, run_and_report
+from _saga_a2a import run_saga_over_a2a
 
 
 def main() -> int:
-    config = make_config(supplier_failure="out_of_stock", compensation_fails=True)
-    _, state = run_and_report("Compensation fails — INCONSISTENT", config, "saga_compensation_fails.json")
+    state = run_saga_over_a2a(
+        "Deep cut — compensation fails → INCONSISTENT (over A2A)",
+        supplier_mode="out_of_stock", compensation_fails=True,
+        dump_name="saga_compensation_fails.json",
+    )
     assert state.reconciled_status.value == "INCONSISTENT", state.reconciled_status
-    assert state.unrecovered_steps, "expected at least one flagged unrecovered step"
+    assert state.unrecovered_steps, "expected a flagged unrecovered step"
     return 0
 
 

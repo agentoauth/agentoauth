@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from jwcrypto import jwk
 
@@ -38,15 +38,37 @@ _COMPENSATION_TYPE = {
 
 
 @dataclass
+class RemoteResult:
+    """What a cross-org (e.g. A2A) leg returns: a receipt signed by the remote
+    verifier plus that verifier's public JWK so the chain verifies offline."""
+
+    receipt: ConsentReceipt
+    verifier_jwk: Optional[dict[str, Any]] = None
+
+
+# A remote leg: given (saga_id, step, parent_receipt_id) -> RemoteResult.
+# The orchestrator only sees a callable; it never imports A2A. The A2A client
+# that issues the token, crosses the wire, and returns the supplier's receipt
+# lives entirely under orgs/.
+RemoteHandler = Callable[[str, "Step", Optional[str]], RemoteResult]
+
+
+@dataclass
 class Step:
-    """One consequential saga step the orchestrator authorizes and executes."""
+    """One consequential saga step the orchestrator authorizes and executes.
+
+    A local step carries a ``system`` with execute/compensate. A cross-org step
+    carries a ``remote_handler`` instead: the orchestrator delegates authorization
+    and execution to it and appends the receipt it returns.
+    """
 
     step_id: str
     agent_id: str
     action: Action
-    system: Any  # object exposing execute(action) / compensate(action)
+    system: Any = None  # object exposing execute(action) / compensate(action)
     live_state: Optional[dict[str, Any]] = None
     policy_ref: str = "reorder"
+    remote_handler: Optional[RemoteHandler] = None
 
 
 @dataclass
@@ -87,6 +109,9 @@ class Orchestrator:
         links to it. On DENY or execution failure, triggers compensation of all
         prior committed steps in reverse before returning.
         """
+        if step.remote_handler is not None:
+            return self._run_remote_step(step)
+
         agent_key = self._agent_key(step.agent_id)
         token = issue_token(
             self.saga_id, step.step_id, self._last_receipt_id,
@@ -126,6 +151,36 @@ class Orchestrator:
             self._finish_receipt(receipt, executed=False)
             self._compensate_all()
             return receipt
+
+    # -- cross-org (remote) forward step ------------------------------------
+    def _run_remote_step(self, step: Step) -> ConsentReceipt:
+        """Delegate a forward step to a remote org; append its signed receipt.
+
+        The remote leg (orgs/buyer over A2A) issues the consent token, sends it
+        across the wire, and returns the receipt the *remote* verifier signed.
+        We register that verifier's public key so the chain still verifies offline,
+        then apply the same DENY/failure -> compensate-prior-local-steps logic.
+        """
+        result = step.remote_handler(self.saga_id, step, self._last_receipt_id)
+        receipt = result.receipt
+        if result.verifier_jwk:
+            self.store.register_keys([result.verifier_jwk])
+
+        exec_failed = (receipt.metadata.get("exec") or {}).get("status") == "FAILED"
+        if receipt.verdict == Verdict.DENY:
+            self.log.append(f"[{step.step_id}] remote DENY: {receipt.reason}")
+            self._finish_receipt(receipt, executed=False)
+            self._compensate_all()
+        elif exec_failed:
+            err = (receipt.metadata.get("exec") or {}).get("error", receipt.reason)
+            self.log.append(f"[{step.step_id}] remote execution FAILED: {err}")
+            self._finish_receipt(receipt, executed=False)
+            self._compensate_all()
+        else:
+            self._committed.append(_Committed(step, receipt))
+            self.log.append(f"[{step.step_id}] remote {receipt.verdict.value} -> fulfilled")
+            self._finish_receipt(receipt, executed=receipt.executed)
+        return receipt
 
     # -- compensation -------------------------------------------------------
     def _compensate_all(self) -> list[ConsentReceipt]:
