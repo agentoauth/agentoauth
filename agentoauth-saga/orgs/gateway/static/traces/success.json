@@ -1,0 +1,185 @@
+{
+  "scenario": "success",
+  "buyer": {
+    "org": "Org A",
+    "framework": "LangGraph",
+    "agent_id": "buyer@org-a"
+  },
+  "supplier": {
+    "org": "Org B",
+    "framework": "CrewAI"
+  },
+  "request": {
+    "sku": "order:XYZ",
+    "amount": 40000,
+    "currency": "USD",
+    "supplier": "acme",
+    "max_amount": 50000
+  },
+  "token": {
+    "model": {
+      "saga_id": "demo",
+      "step_id": "buyer",
+      "parent_receipt_id": null,
+      "agent_id": "buyer@org-a",
+      "action": {
+        "type": "order.place",
+        "entity": "order:XYZ",
+        "params": {
+          "amount": 40000,
+          "supplier": "acme",
+          "currency": "USD"
+        },
+        "limits": {
+          "max_amount": 50000,
+          "supplier_allowlist": [
+            "acme",
+            "globex",
+            "initech"
+          ]
+        }
+      },
+      "policy_ref": "reorder",
+      "policy_hash": "sha256:d8397f012b414ec6aaa3ba3ffb6354b35aba7790418dd53d02cfedca3669b9f7",
+      "issued_at": "2026-06-22T21:11:48+00:00",
+      "expiry": "2026-06-22T22:11:48+00:00",
+      "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6IjUzb2tjZE9HSlI5SHo4eXJQdjc4OVp0LUotZW5YWEZlNmJ0NU1YbnR4NzAiLCJ0eXAiOiJKV1QifQ.eyJhY3Rpb24iOnsiZW50aXR5Ijoib3JkZXI6WFlaIiwibGltaXRzIjp7Im1heF9hbW91bnQiOjUwMDAwLCJzdXBwbGllcl9hbGxvd2xpc3QiOlsiYWNtZSIsImdsb2JleCIsImluaXRlY2giXX0sInBhcmFtcyI6eyJhbW91bnQiOjQwMDAwLCJjdXJyZW5jeSI6IlVTRCIsInN1cHBsaWVyIjoiYWNtZSJ9LCJ0eXBlIjoib3JkZXIucGxhY2UifSwiYWdlbnQiOiJidXllckBvcmctYSIsImV4cCI6MTc4MjE2NjMwOCwiaWF0IjoxNzgyMTYyNzA4LCJqdGkiOiIyMzFhMmEzYi0yZmMxLTQ2ZmYtYjFlYS0yMjRkNjkxMzY1NTciLCJub25jZSI6ImRjMDU1MzM1YjYxNDRiNDViZjE1NWQ1Mjg0MGJiYjg2IiwicGFyZW50X3JlY2VpcHRfaWQiOm51bGwsInBvbGljeV9oYXNoIjoic2hhMjU2OmQ4Mzk3ZjAxMmI0MTRlYzZhYWEzYmEzZmZiNjM1NGIzNWFiYTc3OTA0MThkZDUzZDAyY2ZlZGNhMzY2OWI5ZjciLCJwb2xpY3lfcmVmIjoicmVvcmRlciIsInNhZ2FfaWQiOiJkZW1vIiwic2NvcGUiOiJvcmRlci5wbGFjZSIsInN0ZXBfaWQiOiJidXllciIsInZlciI6InNhZ2EuY29uc2VudC52MCJ9.RLkpuBl59wfXqYUB_FAcz9MI_6aIo-FVQWKxIOSUX4wZEZGmCYxA70cMZ-5Sydj2yt9eu4tp41wBfz0WV7s3AQ"
+    },
+    "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6IjUzb2tjZE9HSlI5SHo4eXJQdjc4OVp0LUotZW5YWEZlNmJ0NU1YbnR4NzAiLCJ0eXAiOiJKV1QifQ.eyJhY3Rpb24iOnsiZW50aXR5Ijoib3JkZXI6WFlaIiwibGltaXRzIjp7Im1heF9hbW91bnQiOjUwMDAwLCJzdXBwbGllcl9hbGxvd2xpc3QiOlsiYWNtZSIsImdsb2JleCIsImluaXRlY2giXX0sInBhcmFtcyI6eyJhbW91bnQiOjQwMDAwLCJjdXJyZW5jeSI6IlVTRCIsInN1cHBsaWVyIjoiYWNtZSJ9LCJ0eXBlIjoib3JkZXIucGxhY2UifSwiYWdlbnQiOiJidXllckBvcmctYSIsImV4cCI6MTc4MjE2NjMwOCwiaWF0IjoxNzgyMTYyNzA4LCJqdGkiOiIyMzFhMmEzYi0yZmMxLTQ2ZmYtYjFlYS0yMjRkNjkxMzY1NTciLCJub25jZSI6ImRjMDU1MzM1YjYxNDRiNDViZjE1NWQ1Mjg0MGJiYjg2IiwicGFyZW50X3JlY2VpcHRfaWQiOm51bGwsInBvbGljeV9oYXNoIjoic2hhMjU2OmQ4Mzk3ZjAxMmI0MTRlYzZhYWEzYmEzZmZiNjM1NGIzNWFiYTc3OTA0MThkZDUzZDAyY2ZlZGNhMzY2OWI5ZjciLCJwb2xpY3lfcmVmIjoicmVvcmRlciIsInNhZ2FfaWQiOiJkZW1vIiwic2NvcGUiOiJvcmRlci5wbGFjZSIsInN0ZXBfaWQiOiJidXllciIsInZlciI6InNhZ2EuY29uc2VudC52MCJ9.RLkpuBl59wfXqYUB_FAcz9MI_6aIo-FVQWKxIOSUX4wZEZGmCYxA70cMZ-5Sydj2yt9eu4tp41wBfz0WV7s3AQ",
+    "decoded": {
+      "header": {
+        "alg": "EdDSA",
+        "kid": "53okcdOGJR9Hz8yrPv789Zt-J-enXXFe6bt5MXntx70",
+        "typ": "JWT"
+      },
+      "payload": {
+        "action": {
+          "entity": "order:XYZ",
+          "limits": {
+            "max_amount": 50000,
+            "supplier_allowlist": [
+              "acme",
+              "globex",
+              "initech"
+            ]
+          },
+          "params": {
+            "amount": 40000,
+            "currency": "USD",
+            "supplier": "acme"
+          },
+          "type": "order.place"
+        },
+        "agent": "buyer@org-a",
+        "exp": 1782166308,
+        "iat": 1782162708,
+        "jti": "231a2a3b-2fc1-46ff-b1ea-224d69136557",
+        "nonce": "dc055335b6144b45bf155d52840bbb86",
+        "parent_receipt_id": null,
+        "policy_hash": "sha256:d8397f012b414ec6aaa3ba3ffb6354b35aba7790418dd53d02cfedca3669b9f7",
+        "policy_ref": "reorder",
+        "saga_id": "demo",
+        "scope": "order.place",
+        "step_id": "buyer",
+        "ver": "saga.consent.v0"
+      }
+    },
+    "agent_jwk": {
+      "crv": "Ed25519",
+      "kid": "53okcdOGJR9Hz8yrPv789Zt-J-enXXFe6bt5MXntx70",
+      "kty": "OKP",
+      "x": "RAqJACzOFrJ4djlf-f4RVOmV1x8DFo7zLlsZ2KoQZwQ",
+      "alg": "EdDSA",
+      "use": "sig"
+    }
+  },
+  "wire": {
+    "transport": "A2A",
+    "metadata_key": "agentoauth",
+    "skill": "place_order"
+  },
+  "verify": {
+    "agent_signature_checked": true,
+    "verdict": "ALLOW",
+    "decision_basis": [
+      "no rule triggered -> ALLOW"
+    ],
+    "reason": "no rule triggered -> ALLOW",
+    "quoted_price": 40000.0,
+    "max_amount": 50000
+  },
+  "crew": {
+    "used_llm": false,
+    "category": "fulfilled",
+    "reasoning": "Supplier 'acme' has SKU order:XYZ in stock; quoted 40000 USD, within the authorized limit.",
+    "order_id": "ORD-order:XYZ"
+  },
+  "receipt": {
+    "model": {
+      "receipt_id": "receipt_aa3d966398f0c2c4efb25f3898e197f1",
+      "saga_id": "demo",
+      "step_id": "buyer",
+      "parent_receipt_id": null,
+      "consent_token_hash": "sha256:0d749d1ab02ce04d9183be8e8838cf5b86af8ab5b8a5b51a87fda630a390b6c1",
+      "verdict": "ALLOW",
+      "decision_basis": [
+        "no rule triggered -> ALLOW"
+      ],
+      "executed": true,
+      "compensation_of": null,
+      "policy_id": "reorder-procurement",
+      "policy_hash": "sha256:d8397f012b414ec6aaa3ba3ffb6354b35aba7790418dd53d02cfedca3669b9f7",
+      "reason": "no rule triggered -> ALLOW",
+      "remaining": {},
+      "metadata": {
+        "exec": {
+          "status": "OK"
+        },
+        "order_id": "ORD-order:XYZ",
+        "supplier_reasoning": "Supplier 'acme' has SKU order:XYZ in stock; quoted 40000 USD, within the authorized limit."
+      },
+      "ts": "2026-06-22T21:11:48+00:00",
+      "verifier_signature": "eyJhbGciOiJFZERTQSIsImtpZCI6InVLWVBrN0hIdHVTVmYxWjZhMm1FLW9mYzQ0ejlaMEZ2a0dCVkNDVUxQOGsiLCJ0eXAiOiJKV1QifQ.eyJjb21wZW5zYXRpb25fb2YiOm51bGwsImNvbnNlbnRfdG9rZW5faGFzaCI6InNoYTI1NjowZDc0OWQxYWIwMmNlMDRkOTE4M2JlOGU4ODM4Y2Y1Yjg2YWY4YWI1YjhhNWI1MWE4N2ZkYTYzMGEzOTBiNmMxIiwiZGVjaXNpb24iOiJBTExPVyIsImRlY2lzaW9uX2Jhc2lzIjpbIm5vIHJ1bGUgdHJpZ2dlcmVkIC0-IEFMTE9XIl0sImlhdCI6MTc4MjE2MjcwOCwiaWQiOiJyZWNlaXB0X2FhM2Q5NjYzOThmMGMyYzRlZmIyNWYzODk4ZTE5N2YxIiwibWV0YWRhdGEiOnt9LCJwYXJlbnRfcmVjZWlwdF9pZCI6bnVsbCwicG9saWN5X2hhc2giOiJzaGEyNTY6ZDgzOTdmMDEyYjQxNGVjNmFhYTNiYTNmZmI2MzU0YjM1YWJhNzc5MDQxOGRkNTNkMDJjZmVkY2EzNjY5YjlmNyIsInBvbGljeV9pZCI6InJlb3JkZXItcHJvY3VyZW1lbnQiLCJyZWFzb24iOiJubyBydWxlIHRyaWdnZXJlZCAtPiBBTExPVyIsInJlbWFpbmluZyI6e30sInNhZ2FfaWQiOiJkZW1vIiwic3RlcF9pZCI6ImJ1eWVyIiwidGltZXN0YW1wIjoxNzgyMTYyNzA4LCJ2ZXJzaW9uIjoicmVjZWlwdC5zYWdhLnYwIn0.FTwSal4h8tL10eBWWoiLQYuIWRYGYUgIcz5WKCbFIWecAPXwTOP2-GdVtJwSiwdc1Mdm_jCIy97J49scNi1NCg"
+    },
+    "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6InVLWVBrN0hIdHVTVmYxWjZhMm1FLW9mYzQ0ejlaMEZ2a0dCVkNDVUxQOGsiLCJ0eXAiOiJKV1QifQ.eyJjb21wZW5zYXRpb25fb2YiOm51bGwsImNvbnNlbnRfdG9rZW5faGFzaCI6InNoYTI1NjowZDc0OWQxYWIwMmNlMDRkOTE4M2JlOGU4ODM4Y2Y1Yjg2YWY4YWI1YjhhNWI1MWE4N2ZkYTYzMGEzOTBiNmMxIiwiZGVjaXNpb24iOiJBTExPVyIsImRlY2lzaW9uX2Jhc2lzIjpbIm5vIHJ1bGUgdHJpZ2dlcmVkIC0-IEFMTE9XIl0sImlhdCI6MTc4MjE2MjcwOCwiaWQiOiJyZWNlaXB0X2FhM2Q5NjYzOThmMGMyYzRlZmIyNWYzODk4ZTE5N2YxIiwibWV0YWRhdGEiOnt9LCJwYXJlbnRfcmVjZWlwdF9pZCI6bnVsbCwicG9saWN5X2hhc2giOiJzaGEyNTY6ZDgzOTdmMDEyYjQxNGVjNmFhYTNiYTNmZmI2MzU0YjM1YWJhNzc5MDQxOGRkNTNkMDJjZmVkY2EzNjY5YjlmNyIsInBvbGljeV9pZCI6InJlb3JkZXItcHJvY3VyZW1lbnQiLCJyZWFzb24iOiJubyBydWxlIHRyaWdnZXJlZCAtPiBBTExPVyIsInJlbWFpbmluZyI6e30sInNhZ2FfaWQiOiJkZW1vIiwic3RlcF9pZCI6ImJ1eWVyIiwidGltZXN0YW1wIjoxNzgyMTYyNzA4LCJ2ZXJzaW9uIjoicmVjZWlwdC5zYWdhLnYwIn0.FTwSal4h8tL10eBWWoiLQYuIWRYGYUgIcz5WKCbFIWecAPXwTOP2-GdVtJwSiwdc1Mdm_jCIy97J49scNi1NCg",
+    "decoded": {
+      "header": {
+        "alg": "EdDSA",
+        "kid": "uKYPk7HHtuSVf1Z6a2mE-ofc44z9Z0FvkGBVCCULP8k",
+        "typ": "JWT"
+      },
+      "payload": {
+        "compensation_of": null,
+        "consent_token_hash": "sha256:0d749d1ab02ce04d9183be8e8838cf5b86af8ab5b8a5b51a87fda630a390b6c1",
+        "decision": "ALLOW",
+        "decision_basis": [
+          "no rule triggered -> ALLOW"
+        ],
+        "iat": 1782162708,
+        "id": "receipt_aa3d966398f0c2c4efb25f3898e197f1",
+        "metadata": {},
+        "parent_receipt_id": null,
+        "policy_hash": "sha256:d8397f012b414ec6aaa3ba3ffb6354b35aba7790418dd53d02cfedca3669b9f7",
+        "policy_id": "reorder-procurement",
+        "reason": "no rule triggered -> ALLOW",
+        "remaining": {},
+        "saga_id": "demo",
+        "step_id": "buyer",
+        "timestamp": 1782162708,
+        "version": "receipt.saga.v0"
+      }
+    },
+    "verifier_jwk": {
+      "crv": "Ed25519",
+      "kid": "uKYPk7HHtuSVf1Z6a2mE-ofc44z9Z0FvkGBVCCULP8k",
+      "kty": "OKP",
+      "x": "3gUcoMT5IiHatgKPB83Ky9nMw1IWK5zIuil4edPbj2o",
+      "alg": "EdDSA",
+      "use": "sig"
+    },
+    "consent_token_hash": "sha256:0d749d1ab02ce04d9183be8e8838cf5b86af8ab5b8a5b51a87fda630a390b6c1",
+    "executed": true
+  },
+  "a2a_state": "completed",
+  "receipt_valid_server": true
+}

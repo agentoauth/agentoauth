@@ -1,0 +1,179 @@
+{
+  "scenario": "price_violation",
+  "buyer": {
+    "org": "Org A",
+    "framework": "LangGraph",
+    "agent_id": "buyer@org-a"
+  },
+  "supplier": {
+    "org": "Org B",
+    "framework": "CrewAI"
+  },
+  "request": {
+    "sku": "order:XYZ",
+    "amount": 40000,
+    "currency": "USD",
+    "supplier": "acme",
+    "max_amount": 50000
+  },
+  "token": {
+    "model": {
+      "saga_id": "demo",
+      "step_id": "buyer",
+      "parent_receipt_id": null,
+      "agent_id": "buyer@org-a",
+      "action": {
+        "type": "order.place",
+        "entity": "order:XYZ",
+        "params": {
+          "amount": 40000,
+          "supplier": "acme",
+          "currency": "USD"
+        },
+        "limits": {
+          "max_amount": 50000,
+          "supplier_allowlist": [
+            "acme",
+            "globex",
+            "initech"
+          ]
+        }
+      },
+      "policy_ref": "reorder",
+      "policy_hash": "sha256:d8397f012b414ec6aaa3ba3ffb6354b35aba7790418dd53d02cfedca3669b9f7",
+      "issued_at": "2026-06-22T21:11:50+00:00",
+      "expiry": "2026-06-22T22:11:50+00:00",
+      "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6IjUzb2tjZE9HSlI5SHo4eXJQdjc4OVp0LUotZW5YWEZlNmJ0NU1YbnR4NzAiLCJ0eXAiOiJKV1QifQ.eyJhY3Rpb24iOnsiZW50aXR5Ijoib3JkZXI6WFlaIiwibGltaXRzIjp7Im1heF9hbW91bnQiOjUwMDAwLCJzdXBwbGllcl9hbGxvd2xpc3QiOlsiYWNtZSIsImdsb2JleCIsImluaXRlY2giXX0sInBhcmFtcyI6eyJhbW91bnQiOjQwMDAwLCJjdXJyZW5jeSI6IlVTRCIsInN1cHBsaWVyIjoiYWNtZSJ9LCJ0eXBlIjoib3JkZXIucGxhY2UifSwiYWdlbnQiOiJidXllckBvcmctYSIsImV4cCI6MTc4MjE2NjMxMCwiaWF0IjoxNzgyMTYyNzEwLCJqdGkiOiI2YWVlODVjYy1kNGEwLTQyNjItODczNy0xOWYzYjU1OTRiOWMiLCJub25jZSI6ImNkMDI5OWEyYjQxODRkY2NiMGUwNTUzN2U1ZDRjZjY4IiwicGFyZW50X3JlY2VpcHRfaWQiOm51bGwsInBvbGljeV9oYXNoIjoic2hhMjU2OmQ4Mzk3ZjAxMmI0MTRlYzZhYWEzYmEzZmZiNjM1NGIzNWFiYTc3OTA0MThkZDUzZDAyY2ZlZGNhMzY2OWI5ZjciLCJwb2xpY3lfcmVmIjoicmVvcmRlciIsInNhZ2FfaWQiOiJkZW1vIiwic2NvcGUiOiJvcmRlci5wbGFjZSIsInN0ZXBfaWQiOiJidXllciIsInZlciI6InNhZ2EuY29uc2VudC52MCJ9.h4kq3FSIcawbY3NDGd_qyhrbUXaTh1oNQ_c2YhSvNKeri6b1FMqF8A3pTPxAywpdiRYkKdu-A1VJJP016p4WBA"
+    },
+    "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6IjUzb2tjZE9HSlI5SHo4eXJQdjc4OVp0LUotZW5YWEZlNmJ0NU1YbnR4NzAiLCJ0eXAiOiJKV1QifQ.eyJhY3Rpb24iOnsiZW50aXR5Ijoib3JkZXI6WFlaIiwibGltaXRzIjp7Im1heF9hbW91bnQiOjUwMDAwLCJzdXBwbGllcl9hbGxvd2xpc3QiOlsiYWNtZSIsImdsb2JleCIsImluaXRlY2giXX0sInBhcmFtcyI6eyJhbW91bnQiOjQwMDAwLCJjdXJyZW5jeSI6IlVTRCIsInN1cHBsaWVyIjoiYWNtZSJ9LCJ0eXBlIjoib3JkZXIucGxhY2UifSwiYWdlbnQiOiJidXllckBvcmctYSIsImV4cCI6MTc4MjE2NjMxMCwiaWF0IjoxNzgyMTYyNzEwLCJqdGkiOiI2YWVlODVjYy1kNGEwLTQyNjItODczNy0xOWYzYjU1OTRiOWMiLCJub25jZSI6ImNkMDI5OWEyYjQxODRkY2NiMGUwNTUzN2U1ZDRjZjY4IiwicGFyZW50X3JlY2VpcHRfaWQiOm51bGwsInBvbGljeV9oYXNoIjoic2hhMjU2OmQ4Mzk3ZjAxMmI0MTRlYzZhYWEzYmEzZmZiNjM1NGIzNWFiYTc3OTA0MThkZDUzZDAyY2ZlZGNhMzY2OWI5ZjciLCJwb2xpY3lfcmVmIjoicmVvcmRlciIsInNhZ2FfaWQiOiJkZW1vIiwic2NvcGUiOiJvcmRlci5wbGFjZSIsInN0ZXBfaWQiOiJidXllciIsInZlciI6InNhZ2EuY29uc2VudC52MCJ9.h4kq3FSIcawbY3NDGd_qyhrbUXaTh1oNQ_c2YhSvNKeri6b1FMqF8A3pTPxAywpdiRYkKdu-A1VJJP016p4WBA",
+    "decoded": {
+      "header": {
+        "alg": "EdDSA",
+        "kid": "53okcdOGJR9Hz8yrPv789Zt-J-enXXFe6bt5MXntx70",
+        "typ": "JWT"
+      },
+      "payload": {
+        "action": {
+          "entity": "order:XYZ",
+          "limits": {
+            "max_amount": 50000,
+            "supplier_allowlist": [
+              "acme",
+              "globex",
+              "initech"
+            ]
+          },
+          "params": {
+            "amount": 40000,
+            "currency": "USD",
+            "supplier": "acme"
+          },
+          "type": "order.place"
+        },
+        "agent": "buyer@org-a",
+        "exp": 1782166310,
+        "iat": 1782162710,
+        "jti": "6aee85cc-d4a0-4262-8737-19f3b5594b9c",
+        "nonce": "cd0299a2b4184dccb0e05537e5d4cf68",
+        "parent_receipt_id": null,
+        "policy_hash": "sha256:d8397f012b414ec6aaa3ba3ffb6354b35aba7790418dd53d02cfedca3669b9f7",
+        "policy_ref": "reorder",
+        "saga_id": "demo",
+        "scope": "order.place",
+        "step_id": "buyer",
+        "ver": "saga.consent.v0"
+      }
+    },
+    "agent_jwk": {
+      "crv": "Ed25519",
+      "kid": "53okcdOGJR9Hz8yrPv789Zt-J-enXXFe6bt5MXntx70",
+      "kty": "OKP",
+      "x": "RAqJACzOFrJ4djlf-f4RVOmV1x8DFo7zLlsZ2KoQZwQ",
+      "alg": "EdDSA",
+      "use": "sig"
+    }
+  },
+  "wire": {
+    "transport": "A2A",
+    "metadata_key": "agentoauth",
+    "skill": "place_order"
+  },
+  "verify": {
+    "agent_signature_checked": true,
+    "verdict": "DENY",
+    "decision_basis": [
+      "amount_exceeds_limit: quoted price 109000.0 exceeds max_amount 50000 -> DENY"
+    ],
+    "reason": "amount_exceeds_limit: quoted price 109000.0 exceeds max_amount 50000 -> DENY",
+    "quoted_price": 109000.0,
+    "max_amount": 50000
+  },
+  "crew": {
+    "used_llm": false,
+    "category": "authority_denied",
+    "reasoning": "amount_exceeds_limit: quoted price 109000.0 exceeds max_amount 50000 -> DENY",
+    "order_id": null
+  },
+  "receipt": {
+    "model": {
+      "receipt_id": "receipt_cc6587447b36aa8f1241bcea29d0e6ba",
+      "saga_id": "demo",
+      "step_id": "buyer",
+      "parent_receipt_id": null,
+      "consent_token_hash": "sha256:d7954bc52d7acfab6c55cb2f2fc8f4beecb7ae1e3ffed686b8ed0981cfe7daa5",
+      "verdict": "DENY",
+      "decision_basis": [
+        "amount_exceeds_limit: quoted price 109000.0 exceeds max_amount 50000 -> DENY"
+      ],
+      "executed": false,
+      "compensation_of": null,
+      "policy_id": "reorder-procurement",
+      "policy_hash": "sha256:d8397f012b414ec6aaa3ba3ffb6354b35aba7790418dd53d02cfedca3669b9f7",
+      "reason": "amount_exceeds_limit: quoted price 109000.0 exceeds max_amount 50000 -> DENY",
+      "remaining": {},
+      "metadata": {},
+      "ts": "2026-06-22T21:11:50+00:00",
+      "verifier_signature": "eyJhbGciOiJFZERTQSIsImtpZCI6InVLWVBrN0hIdHVTVmYxWjZhMm1FLW9mYzQ0ejlaMEZ2a0dCVkNDVUxQOGsiLCJ0eXAiOiJKV1QifQ.eyJjb21wZW5zYXRpb25fb2YiOm51bGwsImNvbnNlbnRfdG9rZW5faGFzaCI6InNoYTI1NjpkNzk1NGJjNTJkN2FjZmFiNmM1NWNiMmYyZmM4ZjRiZWVjYjdhZTFlM2ZmZWQ2ODZiOGVkMDk4MWNmZTdkYWE1IiwiZGVjaXNpb24iOiJERU5ZIiwiZGVjaXNpb25fYmFzaXMiOlsiYW1vdW50X2V4Y2VlZHNfbGltaXQ6IHF1b3RlZCBwcmljZSAxMDkwMDAuMCBleGNlZWRzIG1heF9hbW91bnQgNTAwMDAgLT4gREVOWSJdLCJpYXQiOjE3ODIxNjI3MTAsImlkIjoicmVjZWlwdF9jYzY1ODc0NDdiMzZhYThmMTI0MWJjZWEyOWQwZTZiYSIsIm1ldGFkYXRhIjp7fSwicGFyZW50X3JlY2VpcHRfaWQiOm51bGwsInBvbGljeV9oYXNoIjoic2hhMjU2OmQ4Mzk3ZjAxMmI0MTRlYzZhYWEzYmEzZmZiNjM1NGIzNWFiYTc3OTA0MThkZDUzZDAyY2ZlZGNhMzY2OWI5ZjciLCJwb2xpY3lfaWQiOiJyZW9yZGVyLXByb2N1cmVtZW50IiwicmVhc29uIjoiYW1vdW50X2V4Y2VlZHNfbGltaXQ6IHF1b3RlZCBwcmljZSAxMDkwMDAuMCBleGNlZWRzIG1heF9hbW91bnQgNTAwMDAgLT4gREVOWSIsInJlbWFpbmluZyI6e30sInNhZ2FfaWQiOiJkZW1vIiwic3RlcF9pZCI6ImJ1eWVyIiwidGltZXN0YW1wIjoxNzgyMTYyNzEwLCJ2ZXJzaW9uIjoicmVjZWlwdC5zYWdhLnYwIn0.vc7duxAuz1sIlWDOudK1KrF5oDT0zoNY1n-xR8_xUyaEpptuNaLEEdBpS_nidkdUb68-6sFk2QMwbxr0vpNtDw"
+    },
+    "signature": "eyJhbGciOiJFZERTQSIsImtpZCI6InVLWVBrN0hIdHVTVmYxWjZhMm1FLW9mYzQ0ejlaMEZ2a0dCVkNDVUxQOGsiLCJ0eXAiOiJKV1QifQ.eyJjb21wZW5zYXRpb25fb2YiOm51bGwsImNvbnNlbnRfdG9rZW5faGFzaCI6InNoYTI1NjpkNzk1NGJjNTJkN2FjZmFiNmM1NWNiMmYyZmM4ZjRiZWVjYjdhZTFlM2ZmZWQ2ODZiOGVkMDk4MWNmZTdkYWE1IiwiZGVjaXNpb24iOiJERU5ZIiwiZGVjaXNpb25fYmFzaXMiOlsiYW1vdW50X2V4Y2VlZHNfbGltaXQ6IHF1b3RlZCBwcmljZSAxMDkwMDAuMCBleGNlZWRzIG1heF9hbW91bnQgNTAwMDAgLT4gREVOWSJdLCJpYXQiOjE3ODIxNjI3MTAsImlkIjoicmVjZWlwdF9jYzY1ODc0NDdiMzZhYThmMTI0MWJjZWEyOWQwZTZiYSIsIm1ldGFkYXRhIjp7fSwicGFyZW50X3JlY2VpcHRfaWQiOm51bGwsInBvbGljeV9oYXNoIjoic2hhMjU2OmQ4Mzk3ZjAxMmI0MTRlYzZhYWEzYmEzZmZiNjM1NGIzNWFiYTc3OTA0MThkZDUzZDAyY2ZlZGNhMzY2OWI5ZjciLCJwb2xpY3lfaWQiOiJyZW9yZGVyLXByb2N1cmVtZW50IiwicmVhc29uIjoiYW1vdW50X2V4Y2VlZHNfbGltaXQ6IHF1b3RlZCBwcmljZSAxMDkwMDAuMCBleGNlZWRzIG1heF9hbW91bnQgNTAwMDAgLT4gREVOWSIsInJlbWFpbmluZyI6e30sInNhZ2FfaWQiOiJkZW1vIiwic3RlcF9pZCI6ImJ1eWVyIiwidGltZXN0YW1wIjoxNzgyMTYyNzEwLCJ2ZXJzaW9uIjoicmVjZWlwdC5zYWdhLnYwIn0.vc7duxAuz1sIlWDOudK1KrF5oDT0zoNY1n-xR8_xUyaEpptuNaLEEdBpS_nidkdUb68-6sFk2QMwbxr0vpNtDw",
+    "decoded": {
+      "header": {
+        "alg": "EdDSA",
+        "kid": "uKYPk7HHtuSVf1Z6a2mE-ofc44z9Z0FvkGBVCCULP8k",
+        "typ": "JWT"
+      },
+      "payload": {
+        "compensation_of": null,
+        "consent_token_hash": "sha256:d7954bc52d7acfab6c55cb2f2fc8f4beecb7ae1e3ffed686b8ed0981cfe7daa5",
+        "decision": "DENY",
+        "decision_basis": [
+          "amount_exceeds_limit: quoted price 109000.0 exceeds max_amount 50000 -> DENY"
+        ],
+        "iat": 1782162710,
+        "id": "receipt_cc6587447b36aa8f1241bcea29d0e6ba",
+        "metadata": {},
+        "parent_receipt_id": null,
+        "policy_hash": "sha256:d8397f012b414ec6aaa3ba3ffb6354b35aba7790418dd53d02cfedca3669b9f7",
+        "policy_id": "reorder-procurement",
+        "reason": "amount_exceeds_limit: quoted price 109000.0 exceeds max_amount 50000 -> DENY",
+        "remaining": {},
+        "saga_id": "demo",
+        "step_id": "buyer",
+        "timestamp": 1782162710,
+        "version": "receipt.saga.v0"
+      }
+    },
+    "verifier_jwk": {
+      "crv": "Ed25519",
+      "kid": "uKYPk7HHtuSVf1Z6a2mE-ofc44z9Z0FvkGBVCCULP8k",
+      "kty": "OKP",
+      "x": "3gUcoMT5IiHatgKPB83Ky9nMw1IWK5zIuil4edPbj2o",
+      "alg": "EdDSA",
+      "use": "sig"
+    },
+    "consent_token_hash": "sha256:d7954bc52d7acfab6c55cb2f2fc8f4beecb7ae1e3ffed686b8ed0981cfe7daa5",
+    "executed": false
+  },
+  "a2a_state": "rejected",
+  "receipt_valid_server": true
+}

@@ -46,6 +46,30 @@ Or run both agents as containers:
 docker compose up --build         # supplier (Org B) stays up; buyer (Org A) runs the handshake
 ```
 
+## Live visual demo (the two-signature flow, for video)
+
+A single web service animates the real handshake step-by-step — the agent-signed **Consent Token
+(Signature 1)** crossing A2A to the CrewAI verifier, the policy decision, and the verifier-signed
+**Consent Receipt (Signature 2)** coming back — and **re-verifies both signatures in your browser**
+with WebCrypto. It runs the genuine flow live (with a baked replay fallback so a recording never
+breaks).
+
+```bash
+pip install -e ".[a2a,supplier,gateway]"
+python -m orgs.gateway.server          # → http://localhost:8000
+# click Success / Out of stock / Price violation; use Step for narration, or Run to autoplay
+```
+
+The gateway lazily launches the CrewAI supplier itself (real A2A wire on localhost) and exposes
+`POST /api/handshake {"scenario": ...}` returning the genuine-artifact trace the UI animates.
+Regenerate the offline replay traces with `python scripts/gen_traces.py`.
+
+**Deploy to Railway (one service):** the repo ships `railway.json` (Dockerfile build, start
+`python -m orgs.gateway.server`, healthcheck `/healthz`). Point Railway at this directory and deploy;
+the container binds `0.0.0.0:$PORT` and serves the demo at the Railway URL. Set `OPENAI_API_KEY` /
+`ANTHROPIC_API_KEY` to switch the CrewAI supplier to real LLM reasoning. *(Cloudflare Workers can't
+run CrewAI/a2a-sdk; only the Python host — Railway or any container platform — fits.)*
+
 ## Why two different frameworks
 
 The point is **cross-framework interoperability**. Org A is built with **LangGraph**, Org B with
@@ -151,6 +175,7 @@ orgs/
   buyer/      client.py graph.py saga.py        # LangGraph + A2A client
   supplier/   server.py executor.py crew.py inventory.py   # CrewAI + A2A server
   common/     a2a_consent.py                    # the only A2A↔AgentOAuth bridge
+  gateway/    server.py trace.py supplier_manager.py static/   # live two-signature visual demo
 demos/   run_handshake.py  run_happy.py run_failure.py run_compensation_fails.py
 tests/   test_handshake_e2e.py test_saga_e2e.py test_interop_ts.py test_layering.py
          test_policy.py test_reconcile.py test_receipts_chain.py test_verifier.py ...

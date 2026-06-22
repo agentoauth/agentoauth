@@ -20,7 +20,7 @@ from a2a.types import MessageSendParams, SendMessageRequest
 from agentoauth_saga.consent.jwk import public_jwk_dict
 from agentoauth_saga.consent.keys import KeyRing
 from agentoauth_saga.consent.token import issue_token
-from agentoauth_saga.models import Action, ConsentReceipt
+from agentoauth_saga.models import Action, ConsentReceipt, ConsentToken
 from agentoauth_saga.receipts.verify_chain import verify_receipt_signature
 
 from orgs.common.a2a_consent import build_order_message, extract_receipt
@@ -35,6 +35,8 @@ class OrderOutcome:
     receipt_valid: bool                         # signature verified offline against the supplier's JWK
     verifier_jwk: Optional[dict[str, Any]]
     decision: dict[str, Any]
+    token: Optional[ConsentToken] = None        # the agent-signed Consent Token (Signature 1)
+    agent_jwk: Optional[dict[str, Any]] = None  # buyer's public key, to verify Signature 1 offline
 
 
 async def place_order_via_a2a(
@@ -78,4 +80,6 @@ async def place_order_via_a2a(
         receipt_valid=receipt_valid,
         verifier_jwk=parsed.verifier_jwk,
         decision=parsed.decision,
+        token=token,
+        agent_jwk=public_jwk_dict(agent_key),
     )

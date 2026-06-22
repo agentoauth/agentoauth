@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: MIT -->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>AgentOAuth over A2A — the two-signature handshake</title>
+<link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<header>
+  <h1>AgentOAuth over A2A — the two-signature handshake</h1>
+  <div class="sub">A <b>LangGraph</b> agent and a <b>CrewAI</b> agent — no shared code — establish verifiable authority over A2A.
+    Signature&nbsp;1 = the agent's Consent Token · Signature&nbsp;2 = the verifier's Consent Receipt. Both verified in <i>your</i> browser.</div>
+</header>
+<main>
+  <div class="controls">
+    <div class="seg" id="scenarios">
+      <button data-sc="success" class="active">Success</button>
+      <button data-sc="out_of_stock">Out of stock</button>
+      <button data-sc="price_violation">Price violation</button>
+    </div>
+    <button class="primary" id="run">▶ Run handshake</button>
+    <button class="ghost" id="step">Step</button>
+    <button class="ghost" id="reset">Reset</button>
+    <label class="toggle"><input type="checkbox" id="replay"/> replay (offline)</label>
+  </div>
+
+  <div class="rail2" id="rail"></div>
+
+  <div class="stage">
+    <!-- Org A -->
+    <section class="org orgA" id="orgA">
+      <span class="tag"><span class="dot"></span> Org A · buyer</span>
+      <div class="fw">framework: LangGraph · role: A2A client (initiator)</div>
+      <div class="box" id="a-build"><h4>1 · build order</h4><div class="v" id="a-build-v">—</div></div>
+      <div class="box" id="a-sign"><h4>2 · sign Consent Token <span style="color:var(--a)">(Signature 1)</span></h4><div class="v" id="a-sign-v">—</div></div>
+      <div class="box" id="a-verify"><h4>9 · verify receipt <span style="color:var(--b)">(Signature 2)</span></h4><div class="v" id="a-verify-v">—</div></div>
+    </section>
+
+    <!-- wire -->
+    <div class="wire" id="wire">
+      <div class="rail"></div>
+      <div class="label">A2A</div>
+    </div>
+
+    <!-- Org B -->
+    <section class="org orgB" id="orgB">
+      <span class="tag"><span class="dot"></span> Org B · supplier</span>
+      <div class="fw">framework: CrewAI · role: A2A server (responder)</div>
+      <div class="box" id="b-recv"><h4>4 · receive + check agent signature</h4><div class="v" id="b-recv-v">—</div></div>
+      <div class="box" id="b-policy"><h4>5 · verifier: evaluate policy</h4><div class="v" id="b-policy-v">—</div></div>
+      <div class="box" id="b-crew"><h4>6 · CrewAI reasons over private inventory</h4><div class="v" id="b-crew-v">—</div></div>
+      <div class="box" id="b-sign"><h4>7 · sign Consent Receipt <span style="color:var(--b)">(Signature 2)</span></h4><div class="v" id="b-sign-v">—</div></div>
+    </section>
+  </div>
+
+  <div class="arts">
+    <div class="art">
+      <h3>Consent Token <span style="color:var(--muted);font-weight:400">· Signature 1 (agent)</span></h3>
+      <div id="sig1badge" class="badge wait">○ awaiting run</div>
+      <div class="sig" id="sig1">—</div>
+      <details><summary>token JSON</summary><pre id="tokenjson">—</pre></details>
+    </div>
+    <div class="art">
+      <h3>Consent Receipt <span style="color:var(--muted);font-weight:400">· Signature 2 (verifier)</span></h3>
+      <div id="sig2badge" class="badge wait">○ awaiting run</div>
+      <div class="sig" id="sig2">—</div>
+      <div class="bind" id="bind">binding: —</div>
+      <details><summary>receipt JSON</summary><pre id="receiptjson">—</pre></details>
+    </div>
+  </div>
+
+  <div class="final" id="final" style="display:none"></div>
+</main>
+<footer>
+  Every artifact is real — the browser re-verifies both Ed25519 signatures with WebCrypto, offline.
+  Orchestrators (A2A) coordinate the steps; AgentOAuth proves each step's authority.
+</footer>
+<script src="app.js"></script>
+</body>
+</html>

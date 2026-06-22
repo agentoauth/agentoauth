@@ -27,6 +27,7 @@ mongo = ["pymongo>=4.6"]
 # A2A transport + the two org services. The CORE never imports these; only orgs/ do.
 a2a = ["a2a-sdk[http-server]==0.3.7", "uvicorn>=0.30", "httpx>=0.27"]
 supplier = ["crewai>=1.14,<2"]            # CrewAI agent (responder); LLM optional at runtime
+gateway = ["fastapi>=0.110"]              # live two-signature visual demo (fastapi pulled by a2a too)
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff", "mypy"]
 
 [project.scripts]
