@@ -1,0 +1,34 @@
+sequenceDiagram
+    autonumber
+    participant A as Org A · Buyer (LangGraph, A2A client)
+    participant W as A2A (HTTP wire)
+    participant V as Org B · Verifier (AgentOAuth)
+    participant C as Org B · CrewAI + private inventory
+
+    A->>A: build Action (order.place, amount ≤ limits)
+    A->>A: issue + sign Consent Token  🔏 Signature 1 (agent key)
+    A->>W: A2A Task "place_order"  { token, buyer public key }
+    W->>V: deliver task
+
+    Note over V: VERIFY BEFORE ACTING
+    V->>V: check agent signature (Sig 1) ✓
+    V->>V: compute private quote
+    V->>V: evaluate policy(action, quote vs limit) → verdict
+
+    alt verdict = DENY (price violation)
+        V->>V: sign DENY receipt  🔏 Signature 2
+        V-->>W: artifact { receipt, verifier public key } · state = rejected
+    else verdict = ALLOW
+        V->>C: ask CrewAI to fulfil (reason over private inventory)
+        alt in stock
+            C-->>V: fulfilled (order placed, executed = true)
+        else out of stock / timeout
+            C-->>V: fulfilment_failed (executed = false)
+        end
+        V->>V: sign Consent Receipt  🔏 Signature 2 (verifier key)
+        V-->>W: artifact { receipt, verifier public key } · state = completed / failed
+    end
+
+    W-->>A: deliver result
+    A->>A: verify receipt (Sig 2) offline vs verifier public key ✓
+    A->>A: check binding: sha256(token) == receipt.consent_token_hash ✓

@@ -16,6 +16,11 @@ ORG A  (LangGraph, A2A client)                 ORG B  (CrewAI, A2A server)
    verify returned receipt  ◀──── signed Consent Receipt ──── return signed receipt (artifact)
 ```
 
+The full handshake — the two signatures, the verify-before-acting step, and the
+ALLOW / DENY / out-of-stock branches ([source](docs/handshake.mmd)):
+
+![The two-signature A2A handshake](docs/handshake.png)
+
 ## Run the handshake in one command
 
 ```bash
