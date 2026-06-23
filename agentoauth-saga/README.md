@@ -21,6 +21,10 @@ ALLOW / DENY / out-of-stock branches ([source](docs/handshake.mmd)):
 
 ![The two-signature A2A handshake](docs/handshake.png)
 
+> **Where this is headed:** [`docs/DESIGN.md`](docs/DESIGN.md) — the design for evolving this into an
+> out-of-the-box, cross-org trust layer (domain key resolution, capability/authority advertisement via
+> ARD + A2A, and a neutral, pluggable verifier).
+
 ## Run the handshake in one command
 
 ```bash
